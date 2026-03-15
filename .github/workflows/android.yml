@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout code
@@ -18,7 +20,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -40,14 +42,19 @@ jobs:
 
       - name: Initialize Capacitor (if not exists)
         run: |
-          if [ ! -f "capacitor.config.ts" ]; then
+          if [ ! -f "capacitor.config.ts" ] && [ ! -f "capacitor.config.json" ]; then
             npm install @capacitor/core @capacitor/cli @capacitor/android
             npx cap init "TherapyApp" "com.therapyapp.app" --web-dir dist
+          fi
+          if [ ! -d "android" ]; then
+            npm install @capacitor/android
             npx cap add android
           fi
 
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap sync android
 
       - name: Build Android APK
         run: |
