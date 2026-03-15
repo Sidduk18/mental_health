@@ -8,17 +8,19 @@ require('dotenv').config();
 
 const app = express();
 
-// --- UPDATED CORS CONFIGURATION ---
+// --- UPDATED CORS CONFIGURATION FOR WEB & MOBILE ---
 app.use(cors({
   origin: [
-    'http://localhost:5173', 
-    'http://localhost:3000'
+    'http://localhost:5173',      // Local Vite Web
+    'http://localhost:3000',      // Local Web fallback
+    'http://localhost',           // Capacitor Android
+    'capacitor://localhost'       // Capacitor iOS
   ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-// ----------------------------------
+// ---------------------------------------------------
 
 app.use(express.json());
 
@@ -100,7 +102,7 @@ const peerGroupSchema = new mongoose.Schema({
 });
 const PeerGroup = mongoose.model('PeerGroup', peerGroupSchema);
 
-// --- NEW POST SCHEMA FOR PEER GROUPS (WITH COMMENTS) ---
+// --- POST SCHEMA FOR PEER GROUPS (WITH COMMENTS) ---
 const postSchema = new mongoose.Schema({
   groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'PeerGroup' },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -115,7 +117,7 @@ const postSchema = new mongoose.Schema({
   }]
 });
 const Post = mongoose.model('Post', postSchema);
-// -------------------------------------------------------
+// ---------------------------------------------------
 
 const assessmentSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
