@@ -30,65 +30,32 @@ export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        const docRef = doc(db, 'users', firebaseUser.uid);
-        const docSnap = await getDoc(docRef);
-        
-        let currentProfile: UserProfile;
-        if (docSnap.exists()) {
-          currentProfile = docSnap.data() as UserProfile;
-          
-          // Calculate streak
-          const lastActive = currentProfile.lastActive?.toDate() || new Date();
-          const today = new Date();
-          const diff = differenceInDays(today, lastActive);
-          
-          let newStreak = currentProfile.streak || 0;
-          if (diff === 1) {
-            newStreak += 1;
-          } else if (diff > 1) {
-            newStreak = 1;
-          }
-          
-          if (diff >= 1) {
-            const updates = { 
-              streak: newStreak, 
-              lastActive: Timestamp.now() 
-            };
-            await updateDoc(docRef, updates);
-            currentProfile = { ...currentProfile, ...updates };
-          }
-          setProfile(currentProfile);
-        } else {
-          // New user
-          const role: UserRole = 'adult'; // Default
-          const newProfile: UserProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            displayName: firebaseUser.displayName,
-            role,
-            anonymous: false,
-            createdAt: Timestamp.now(),
-            streak: 1,
-            lastActive: Timestamp.now(),
-            preferences: {
-              theme: 'light',
-              notifications: true,
-            }
-          };
-          await setDoc(docRef, newProfile);
-          setProfile(newProfile);
-        }
-      } else {
-        setProfile(null);
+    const checkAuth = async () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    });
 
-    return () => unsubscribe();
-  }, []);
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Token invalid');
+        const userData = await response.json();
+        setUser({ uid: userData.uid, email: userData.email } as any);
+        setProfile(userData);
+      } catch (err) {
+        localStorage.removeItem('auth_token');
+        setUser(null);
+        setProfile(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [loading]);
 
   useEffect(() => {
     if (profile) {
