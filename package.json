@@ -8,6 +8,7 @@
     "server": "cd server && node index.js",
     "start": "npm run server",
     "build": "vite build",
+    "postinstall": "cd server && npm install",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"

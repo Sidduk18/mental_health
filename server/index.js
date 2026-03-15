@@ -10,7 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://skumar19_db_user:mogF5ToZuNHv8d0k@mindanchor.l4ira1s.mongodb.net/mindanchor?appName=MindAnchor";
+const MONGODB_URI = process.env.MONGODB_URI;
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_here";
 
 mongoose.connect(MONGODB_URI)
