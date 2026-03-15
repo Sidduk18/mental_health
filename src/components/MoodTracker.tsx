@@ -1,0 +1,211 @@
+import React, { useState, useEffect } from 'react';
+import { collection, addDoc, query, where, orderBy, onSnapshot, Timestamp, limit } from 'firebase/firestore';
+import { db } from '../firebase';
+import { UserProfile, MoodLog } from '../types';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
+import { format } from 'date-fns';
+import { Smile, Meh, Frown, Send, Loader2 } from 'lucide-react';
+import { motion } from 'motion/react';
+
+interface MoodTrackerProps {
+  profile: UserProfile;
+}
+
+const moodOptions = [
+  { value: 1, label: 'Very Low', icon: Frown, color: 'text-red-500' },
+  { value: 2, label: 'Low', icon: Frown, color: 'text-orange-500' },
+  { value: 3, label: 'Neutral', icon: Meh, color: 'text-yellow-500' },
+  { value: 4, label: 'Good', icon: Smile, color: 'text-green-500' },
+  { value: 5, label: 'Excellent', icon: Smile, color: 'text-emerald-500' },
+];
+
+export default function MoodTracker({ profile }: MoodTrackerProps) {
+  const [moods, setMoods] = useState<MoodLog[]>([]);
+  const [selectedMood, setSelectedMood] = useState<number | null>(null);
+  const [note, setNote] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'moods'),
+      where('userId', '==', profile.uid),
+      orderBy('timestamp', 'asc'),
+      limit(30)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setMoods(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MoodLog)));
+    });
+
+    return () => unsubscribe();
+  }, [profile.uid]);
+
+  const handleLogMood = async () => {
+    if (selectedMood === null) return;
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, 'moods'), {
+        userId: profile.uid,
+        mood: selectedMood,
+        note,
+        timestamp: Timestamp.now()
+      });
+      setSelectedMood(null);
+      setNote('');
+    } catch (error) {
+      console.error('Error logging mood:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const chartData = moods
+    .filter(m => m.timestamp)
+    .map(m => {
+      const moodValue = Number(m.mood);
+      return {
+        date: format(m.timestamp.toDate(), 'MMM d'),
+        time: format(m.timestamp.toDate(), 'h:mm a'),
+        mood: moodValue,
+        fullDate: format(m.timestamp.toDate(), 'MMM d, h:mm a'),
+        label: moodOptions.find(o => o.value === moodValue)?.label || 'Unknown'
+      };
+    });
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-black text-white p-4 rounded-2xl shadow-2xl border border-white/10 z-50">
+          <p className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1">{data.fullDate}</p>
+          <p className="text-lg font-black">{data.label}</p>
+          <p className="text-xs font-bold text-yellow-400">Level {data.mood}/5</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="space-y-8 pb-20">
+      <header>
+        <h2 className="text-3xl font-black tracking-tight">Mood Tracker</h2>
+        <p className="text-black/50">Visualize your emotional journey over time.</p>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Log Mood Section */}
+        <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
+          <h3 className="text-xl font-bold">How are you right now?</h3>
+          <div className="flex justify-between items-center">
+            {moodOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setSelectedMood(opt.value)}
+                className={`flex flex-col items-center space-y-2 p-4 rounded-2xl transition-all ${
+                  selectedMood === opt.value 
+                    ? 'bg-black text-white scale-110 shadow-lg' 
+                    : 'hover:bg-black/5 text-black/40'
+                }`}
+              >
+                <opt.icon className={`w-8 h-8 ${selectedMood === opt.value ? 'text-white' : opt.color}`} />
+                <span className="text-[10px] font-bold uppercase tracking-tighter">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            placeholder="Add a note about how you're feeling (optional)..."
+            className="w-full p-4 bg-neutral-50 border border-black/5 rounded-2xl focus:ring-2 focus:ring-black outline-none min-h-[100px] transition-all"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+
+          <button
+            onClick={handleLogMood}
+            disabled={selectedMood === null || isSubmitting}
+            className="w-full bg-black text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 disabled:opacity-50 hover:shadow-xl transition-all"
+          >
+            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            <span>Log Mood</span>
+          </button>
+        </section>
+
+        {/* Chart Section */}
+        <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm h-[400px]">
+          <h3 className="text-xl font-bold mb-6">Mood Trends</h3>
+          <div className="h-full pb-10">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#00000010" />
+                <XAxis 
+                  dataKey="fullDate" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={false}
+                />
+                <YAxis 
+                  domain={[1, 5]} 
+                  ticks={[1, 2, 3, 4, 5]} 
+                  tickFormatter={(val) => moodOptions.find(o => o.value === val)?.label || val}
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fontSize: 9, fontWeight: 700, fill: '#666' }}
+                  width={80}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Line 
+                  type="monotone" 
+                  dataKey="mood" 
+                  stroke="#000" 
+                  strokeWidth={4}
+                  dot={{ r: 6, fill: '#000', strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 8, fill: '#000' }}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+      </div>
+
+      {/* History List */}
+      <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm">
+        <h3 className="text-xl font-bold mb-6">Mood History</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {moods.slice().reverse().map((m) => {
+            const option = moodOptions.find(o => o.value === m.mood);
+            const Icon = option?.icon;
+            return (
+              <div key={m.id} className="p-4 bg-neutral-50 rounded-2xl space-y-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    {Icon && <Icon className={`w-5 h-5 ${option?.color}`} />}
+                    <span className="font-bold">{option?.label}</span>
+                  </div>
+                  <span className="text-xs font-bold opacity-30">
+                    {m.timestamp ? format(m.timestamp.toDate(), 'MMM d, h:mm a') : 'Just now'}
+                  </span>
+                </div>
+                {m.note && <p className="text-sm text-black/60 italic">"{m.note}"</p>}
+              </div>
+            );
+          })}
+          {moods.length === 0 && (
+            <p className="text-black/40 italic col-span-full text-center py-8">No mood logs yet. Start by logging your current mood!</p>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}

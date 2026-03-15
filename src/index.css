@@ -1,0 +1,189 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply antialiased selection:bg-black selection:text-white;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-black/10 rounded-full hover:bg-black/20 transition-colors;
+  }
+
+  /* Dark Mode */
+  .dark {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+
+  .dark .bg-white, .dark .card {
+    background-color: #0a0a0a !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: none !important;
+  }
+
+  .dark .bg-neutral-50 {
+    background-color: #111111 !important;
+  }
+
+  .dark .text-black {
+    color: #ffffff !important;
+  }
+
+  .dark .text-black\/50, .dark .text-black\/40, .dark .text-black\/30 {
+    color: rgba(255, 255, 255, 0.5) !important;
+  }
+
+  .dark .border-black\/10, .dark .border-black\/5 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .dark .bg-black {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Teen Theme - Sophisticated & Fun (Violet/Purple) */
+  .teen-theme {
+    --teen-primary: #7C3AED; /* Violet 600 */
+    --teen-secondary: #C026D3; /* Fuchsia 600 */
+    --teen-accent: #4F46E5; /* Indigo 600 */
+    --teen-bg: #ffffff;
+    
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  }
+
+  .dark.teen-theme {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+
+  .teen-theme aside {
+    background-color: #ffffff !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.05) !important;
+  }
+
+  .dark.teen-theme aside {
+    background-color: #000000 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .teen-theme .bg-white, .teen-theme .card {
+    background-color: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02) !important;
+    border-radius: 20px !important;
+  }
+
+  .dark.teen-theme .bg-white, .dark.teen-theme .card {
+    background-color: #0a0a0a !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .teen-theme .bg-black {
+    background-image: linear-gradient(45deg, #7C3AED 0%, #C026D3 50%, #4F46E5 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2) !important;
+  }
+
+  .teen-theme h1, .teen-theme h2, .teen-theme h3 {
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+    color: inherit !important;
+  }
+
+  .teen-theme p {
+    color: rgba(0, 0, 0, 0.6) !important;
+  }
+
+  .dark.teen-theme p {
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+
+  .teen-theme .bg-neutral-50 {
+    background-color: #fafafa !important;
+  }
+
+  .dark.teen-theme .bg-neutral-50 {
+    background-color: #111111 !important;
+  }
+
+  /* Nav items in Teen Theme */
+  .teen-theme nav button {
+    border: none !important;
+    margin-bottom: 2px !important;
+    border-radius: 12px !important;
+  }
+
+  .teen-theme nav button:hover {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+    color: var(--teen-primary) !important;
+    transform: none !important;
+  }
+
+  .dark.teen-theme nav button:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  .teen-theme nav button[class*="bg-black"] {
+    background-image: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(220, 39, 67, 0.2) !important;
+  }
+
+  .teen-theme nav svg {
+    color: inherit !important;
+    filter: none !important;
+  }
+
+  /* Buttons in Teen Theme */
+  .teen-theme button:not(.bg-black):not(nav button) {
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: #000000 !important;
+    background-color: #ffffff !important;
+    border-radius: 12px !important;
+  }
+
+  .dark.teen-theme button:not(.bg-black):not(nav button) {
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    background-color: #1a1a1a !important;
+  }
+
+  .teen-theme button:hover:not(nav button) {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+    background-color: #fafafa !important;
+  }
+
+  .dark.teen-theme button:hover:not(nav button) {
+    background-color: #252525 !important;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-black text-white px-6 py-3 rounded-2xl font-bold hover:shadow-xl transition-all active:scale-95;
+  }
+  .btn-secondary {
+    @apply bg-white text-black border border-black/10 px-6 py-3 rounded-2xl font-bold hover:bg-black/5 transition-all active:scale-95;
+  }
+  .card {
+    @apply bg-white border border-black/10 rounded-[32px] p-8 shadow-sm hover:shadow-md transition-all;
+  }
+}

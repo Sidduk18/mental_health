@@ -1,0 +1,7 @@
+{
+  "name": "MindAnchor",
+  "description": "A comprehensive mental health platform for teenagers and adults, providing personalized counseling, mood tracking, and crisis support.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
