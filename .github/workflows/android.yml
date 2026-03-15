@@ -60,7 +60,7 @@ jobs:
       - name: Debug Versions
         run: |
           java -version
-          node -version
+          node --version
           javac -version
 
       - name: Build Android APK
