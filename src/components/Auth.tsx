@@ -39,15 +39,15 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+    <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-black p-4 md:p-8">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full space-y-8 bg-white border border-black/10 p-10 rounded-[40px] shadow-2xl"
+        className="max-w-md w-full space-y-8 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 p-8 md:p-10 rounded-[32px] md:rounded-[40px] shadow-2xl backdrop-blur-xl"
       >
         <div className="text-center">
-          <h2 className="text-4xl font-black tracking-tighter text-black">MindAnchor</h2>
-          <p className="mt-2 text-sm text-black/50">Your safe space for mental well-being.</p>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-black dark:text-white">MindAnchor</h2>
+          <p className="mt-2 text-sm text-black/50 dark:text-white/50">Your safe space for mental well-being.</p>
         </div>
 
         <AnimatePresence mode="wait">
@@ -83,7 +83,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
                 <input
                   type="email"
                   required
-                  className="w-full px-4 py-4 border border-black/10 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all"
+                  className="w-full px-4 py-4 border border-black/10 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all bg-transparent text-black dark:text-white"
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -91,7 +91,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
                 <input
                   type="password"
                   required
-                  className="w-full px-4 py-4 border border-black/10 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all"
+                  className="w-full px-4 py-4 border border-black/10 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all bg-transparent text-black dark:text-white"
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -100,7 +100,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex items-center justify-center px-4 py-4 border border-transparent rounded-2xl shadow-sm text-white bg-black hover:bg-black/90 transition-all font-bold"
+                  className="w-full flex items-center justify-center px-4 py-4 border border-transparent rounded-2xl shadow-sm text-white dark:text-black bg-black dark:bg-white hover:bg-black/90 transition-all font-bold"
                 >
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isLogin ? 'Sign In' : 'Create Account')}
                 </button>

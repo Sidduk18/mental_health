@@ -38,45 +38,45 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8 pb-20">
       <header>
-        <h2 className="text-3xl font-black tracking-tight">Settings</h2>
-        <p className="text-black/50">Manage your account and preferences.</p>
+        <h2 className="text-3xl font-black tracking-tight text-black dark:text-white">Settings</h2>
+        <p className="text-black/50 dark:text-white/50">Manage your account and preferences.</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
-          <h3 className="text-xl font-bold flex items-center space-x-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        <section className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm space-y-6">
+          <h3 className="text-xl font-bold flex items-center space-x-2 text-black dark:text-white">
             <User className="w-5 h-5" />
             <span>Profile Type</span>
           </h3>
-          <p className="text-sm text-black/50">Tailor your experience based on your age group.</p>
+          <p className="text-sm text-black/50 dark:text-white/50">Tailor your experience based on your age group.</p>
           
-          <div className="flex space-x-4">
+          <div className="flex space-x-3 md:space-x-4">
             {(['teen', 'adult'] as UserRole[]).map((role) => (
               <button
                 key={role}
                 onClick={() => updateProfile({ role })}
                 disabled={isUpdating}
-                className={`flex-1 p-6 rounded-2xl border-2 transition-all text-center ${
+                className={`flex-1 p-4 md:p-6 rounded-2xl border-2 transition-all text-center ${
                   profile.role === role 
-                    ? 'border-black bg-black text-white shadow-lg' 
-                    : 'border-black/5 hover:border-black/20'
+                    ? 'border-black bg-black dark:bg-white text-white dark:text-black shadow-lg'
+                    : 'border-black/5 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 text-black dark:text-white'
                 }`}
               >
-                <span className="text-lg font-bold capitalize">{role}</span>
+                <span className="text-base md:text-lg font-bold capitalize">{role}</span>
               </button>
             ))}
           </div>
         </section>
 
-        <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
-          <h3 className="text-xl font-bold flex items-center space-x-2">
+        <section className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm space-y-6">
+          <h3 className="text-xl font-bold flex items-center space-x-2 text-black dark:text-white">
             <Sun className="w-5 h-5" />
             <span>Appearance</span>
           </h3>
-          <p className="text-sm text-black/50">Choose your preferred theme.</p>
-          <div className="flex space-x-4">
+          <p className="text-sm text-black/50 dark:text-white/50">Choose your preferred theme.</p>
+          <div className="flex space-x-3 md:space-x-4">
             {(['light', 'dark'] as const).map((theme) => (
               <button
                 key={theme}
@@ -84,8 +84,8 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
                 disabled={isUpdating}
                 className={`flex-1 p-4 rounded-2xl border-2 transition-all flex items-center justify-center space-x-2 ${
                   profile.preferences.theme === theme 
-                    ? 'border-black bg-black text-white shadow-lg' 
-                    : 'border-black/5 hover:border-black/20'
+                    ? 'border-black bg-black dark:bg-white text-white dark:text-black shadow-lg'
+                    : 'border-black/5 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 text-black dark:text-white'
                 }`}
               >
                 {theme === 'light' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -95,16 +95,16 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
           </div>
         </section>
 
-        <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
-          <h3 className="text-xl font-bold flex items-center space-x-2">
+        <section className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm space-y-6">
+          <h3 className="text-xl font-bold flex items-center space-x-2 text-black dark:text-white">
             <Shield className="w-5 h-5" />
             <span>Privacy & Security</span>
           </h3>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-2xl">
+            <div className="flex items-center justify-between p-4 bg-neutral-50 dark:bg-white/5 rounded-2xl">
               <div>
-                <p className="font-bold">Anonymous Mode</p>
-                <p className="text-xs text-black/50">Hide your identity in peer groups</p>
+                <p className="font-bold text-black dark:text-white text-sm md:text-base">Anonymous Mode</p>
+                <p className="text-[10px] md:text-xs text-black/50 dark:text-white/50">Hide your identity in peer groups</p>
               </div>
               <button 
                 onClick={() => updateProfile({ anonymous: !profile.anonymous })}
@@ -115,10 +115,10 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
             </div>
 
             {profile.role === 'teen' && (
-              <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-2xl">
+              <div className="flex items-center justify-between p-4 bg-neutral-50 dark:bg-white/5 rounded-2xl">
                 <div>
-                  <p className="font-bold">Parent Dashboard</p>
-                  <p className="text-xs text-black/50">Allow parents to see progress overview</p>
+                  <p className="font-bold text-black dark:text-white text-sm md:text-base">Parent Dashboard</p>
+                  <p className="text-[10px] md:text-xs text-black/50 dark:text-white/50">Allow parents to see progress overview</p>
                 </div>
                 <button 
                   onClick={() => updateProfile({ preferences: { ...profile.preferences, parentDashboardEnabled: !profile.preferences.parentDashboardEnabled } })}
@@ -131,15 +131,15 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
           </div>
         </section>
 
-        <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
-          <h3 className="text-xl font-bold flex items-center space-x-2">
+        <section className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm space-y-6">
+          <h3 className="text-xl font-bold flex items-center space-x-2 text-black dark:text-white">
             <Bell className="w-5 h-5" />
             <span>Notifications</span>
           </h3>
-          <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-2xl">
+          <div className="flex items-center justify-between p-4 bg-neutral-50 dark:bg-white/5 rounded-2xl">
             <div>
-              <p className="font-bold">Smart Nudges</p>
-              <p className="text-xs text-black/50">Non-intrusive check-in reminders</p>
+              <p className="font-bold text-black dark:text-white text-sm md:text-base">Smart Nudges</p>
+              <p className="text-[10px] md:text-xs text-black/50 dark:text-white/50">Non-intrusive check-in reminders</p>
             </div>
             <button 
               onClick={() => updateProfile({ preferences: { ...profile.preferences, notifications: !profile.preferences.notifications } })}
@@ -150,8 +150,8 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
           </div>
         </section>
 
-        <section className="col-span-full bg-red-50 p-8 rounded-[32px] border border-red-100 space-y-6">
-          <div className="flex items-center justify-between">
+        <section className="col-span-full bg-red-50 dark:bg-red-900/10 p-6 md:p-8 rounded-[32px] border border-red-100 dark:border-red-900/20 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h3 className="text-xl font-bold text-red-600">Danger Zone</h3>
               <p className="text-sm text-red-600/60">Irreversible actions for your account.</p>

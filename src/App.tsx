@@ -20,31 +20,31 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState('dashboard');
 
+  const checkAuth = async () => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(getApiUrl('/api/auth/me'), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Token invalid');
+      const userData = await response.json();
+      setUser({ uid: userData.uid, email: userData.email });
+      setProfile(userData);
+    } catch (err) {
+      localStorage.removeItem('auth_token');
+      setUser(null);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(getApiUrl('/api/auth/me'), {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error('Token invalid');
-        const userData = await response.json();
-        setUser({ uid: userData.uid, email: userData.email });
-        setProfile(userData);
-      } catch (err) {
-        localStorage.removeItem('auth_token');
-        setUser(null);
-        setProfile(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     checkAuth();
   }, []);
 
@@ -72,7 +72,10 @@ export default function App() {
   }
 
   if (!user || !profile) {
-    return <Auth onAuthSuccess={() => setLoading(true)} />;
+    return <Auth onAuthSuccess={() => {
+      setLoading(true);
+      checkAuth();
+    }} />;
   }
 
   const renderView = () => {
