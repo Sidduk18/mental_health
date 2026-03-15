@@ -1,16 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  signInWithPopup, 
-  signInWithRedirect,
-  getRedirectResult,
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  ConfirmationResult
-} from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
-import { LogIn, Mail, Phone, ShieldCheck, Loader2, ArrowLeft } from 'lucide-react';
+import { Mail, ShieldCheck, Loader2, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AuthProps {
@@ -20,104 +9,27 @@ interface AuthProps {
 export default function Auth({ onAuthSuccess }: AuthProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('+91');
-  const [otp, setOtp] = useState('');
   const [isLogin, setIsLogin] = useState(true);
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone' | null>(null);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [authMethod, setAuthMethod] = useState<'email' | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const handleRedirect = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          onAuthSuccess();
-        }
-      } catch (err: any) {
-        setError(err.message);
-      }
-    };
-    handleRedirect();
-  }, [onAuthSuccess]);
-
-  useEffect(() => {
-    if (authMethod === 'phone' && !window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible',
-      });
-    }
-  }, [authMethod]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        await createUserWithEmailAndPassword(auth, email, password);
-      }
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
+      const response = await fetch(`http://localhost:5000${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Auth failed');
+
+      localStorage.setItem('auth_token', data.token);
       onAuthSuccess();
-    } catch (err: any) {
-      if (err.code === 'auth/operation-not-allowed') {
-        setError('Email/Password authentication is not enabled in Firebase Console. Please enable it under Authentication > Sign-in method.');
-      } else {
-        setError(err.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePhoneSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const appVerifier = window.recaptchaVerifier;
-      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
-      const result = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
-      setConfirmationResult(result);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      if (confirmationResult) {
-        await confirmationResult.confirm(otp);
-        onAuthSuccess();
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleAuth = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      // Check if it's a mobile device
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-      if (isMobile) {
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        await signInWithPopup(auth, googleProvider);
-        onAuthSuccess();
-      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -127,7 +39,6 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-4">
-      <div id="recaptcha-container"></div>
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
