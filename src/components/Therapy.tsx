@@ -32,7 +32,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [duration, setDuration] = useState(30);
   const [isBooking, setIsBooking] = useState(false);
-  const [activeChat, setActiveChat] = useState<Appointment | null>(null);
+  const [activeChat, setActiveChat] = useState<any | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -45,7 +45,8 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
     const data = await response.json();
     const filtered = data.filter((app: any) => {
       const t = therapists.find(th => th.id === app.therapistId);
-      return t?.role === profile.role;
+      // Filter by role AND remove cancelled appointments
+      return t?.role === profile.role && app.status !== 'cancelled';
     }).map((app: any) => ({ ...app, dateTime: new Date(app.dateTime) }));
     setAppointments(filtered);
   };
@@ -58,11 +59,14 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
     if (activeChat) {
       const token = localStorage.getItem('auth_token');
       const fetchMessages = async () => {
-        const response = await fetch(getApiUrl(`/api/messages/${activeChat.id}`), {
+        // FIXED: Using _id instead of id
+        const chatId = activeChat._id || activeChat.id;
+        const response = await fetch(getApiUrl(`/api/messages/${chatId}`), {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
-        setChatMessages(data);
+        // FIXED: Ensuring data is an array before setting it to prevent .map crashes
+        setChatMessages(Array.isArray(data) ? data : []);
       };
       fetchMessages();
       const interval = setInterval(fetchMessages, 3000);
@@ -144,6 +148,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
     setNewMessage('');
     try {
       const token = localStorage.getItem('auth_token');
+      const chatId = activeChat._id || activeChat.id; // FIXED
       await fetch(getApiUrl('/api/messages'), {
         method: 'POST',
         headers: {
@@ -151,7 +156,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          appointmentId: activeChat.id,
+          appointmentId: chatId,
           senderId: profile.uid,
           content: msg
         })
@@ -186,7 +191,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
           </h3>
           <div className="space-y-4">
             {appointments.length > 0 ? appointments.map((app: any) => (
-              <div key={app._id} className={`p-6 rounded-3xl border shadow-sm space-y-4 ${app.status === 'cancelled' ? 'bg-neutral-50 opacity-60' : 'bg-white border-black/10'}`}>
+              <div key={app._id} className="p-6 rounded-3xl border shadow-sm space-y-4 bg-white border-black/10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <img 
@@ -201,37 +206,30 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                       </p>
                     </div>
                   </div>
-                  {app.status === 'scheduled' && (
-                    <button 
-                      onClick={() => handleCancel(app._id, app.totalCost)}
-                      className="p-2 hover:bg-red-50 rounded-xl transition-colors"
-                      title="Cancel Session"
-                    >
-                      <X className="w-4 h-4 text-red-400" />
-                    </button>
-                  )}
-                  {app.status === 'cancelled' && (
-                    <span className="text-[10px] font-bold text-red-500 uppercase">Cancelled</span>
-                  )}
+                  <button 
+                    onClick={() => handleCancel(app._id, app.totalCost)}
+                    className="p-2 hover:bg-red-50 rounded-xl transition-colors"
+                    title="Cancel Session"
+                  >
+                    <X className="w-4 h-4 text-red-400" />
+                  </button>
                 </div>
-                {app.status === 'scheduled' && (
-                  <div className="flex space-x-2">
-                    <a 
-                      href={app.meetLink} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex-1 bg-black text-white py-2 rounded-xl text-xs font-bold text-center hover:bg-black/80 transition-all"
-                    >
-                      Join Session
-                    </a>
-                    <button 
-                      onClick={() => setActiveChat(app)}
-                      className="p-2 border border-black/10 rounded-xl hover:bg-black/5"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+                <div className="flex space-x-2">
+                  <a 
+                    href={app.meetLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-1 bg-black text-white py-2 rounded-xl text-xs font-bold text-center hover:bg-black/80 transition-all"
+                  >
+                    Join Session
+                  </a>
+                  <button 
+                    onClick={() => setActiveChat(app)}
+                    className="p-2 border border-black/10 rounded-xl hover:bg-black/5"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             )) : (
               <div className="bg-white p-8 rounded-3xl border border-black/10 text-center text-black/30 italic">
@@ -247,6 +245,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
             <span>Book a New Session</span>
           </h3>
           <div className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm min-h-[400px]">
+            {/* Keeping your existing booking logic intact */}
             {bookingStep === 'therapist' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredTherapists.map((t) => (
@@ -356,6 +355,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
         </section>
       </div>
 
+      {/* Chat window logic */}
       <AnimatePresence>
         {activeChat && (
           <motion.div 
@@ -380,7 +380,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-neutral-50">
               {chatMessages.map((msg: any) => (
-                <div key={msg._id} className={`flex ${msg.senderId === profile.uid ? 'justify-end' : 'justify-start'}`}>
+                <div key={msg._id || msg.id} className={`flex ${msg.senderId === profile.uid ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] p-4 rounded-2xl text-sm shadow-sm ${
                     msg.senderId === profile.uid 
                       ? 'bg-black text-white rounded-tr-none' 
