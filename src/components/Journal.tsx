@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase';
 import { UserProfile, JournalEntry } from '../types';
 import { format } from 'date-fns';
 import { PenLine, Mic, History, Sparkles, Loader2, Trash2, X } from 'lucide-react';
@@ -24,7 +22,6 @@ export default function Journal({ profile }: { profile: UserProfile }) {
     "If you could talk to your future self, what would you say?"
   ];
 
-  // Stable prompt based on day of the year
   const getDailyPrompt = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 0);
@@ -34,32 +31,39 @@ export default function Journal({ profile }: { profile: UserProfile }) {
     return prompts[day % prompts.length];
   };
 
+  const fetchJournals = async () => {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const response = await fetch('/api/journals', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setEntries(data.map((e: any) => ({ ...e, timestamp: new Date(e.timestamp) })));
+    } catch (err) {
+      console.error('Error fetching journals:', err);
+    }
+  };
+
   useEffect(() => {
-    const q = query(
-      collection(db, 'journals'),
-      where('userId', '==', profile.uid),
-      orderBy('timestamp', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as JournalEntry)));
-    });
-
-    return () => unsubscribe();
-  }, [profile.uid]);
+    fetchJournals();
+  }, []);
 
   const handleSave = async () => {
     if (!content.trim()) return;
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, 'journals'), {
-        userId: profile.uid,
-        content,
-        type: 'text',
-        timestamp: Timestamp.now()
+      const token = localStorage.getItem('auth_token');
+      await fetch('/api/journals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ content })
       });
       setContent('');
       setActiveTab('history');
+      fetchJournals();
     } catch (error) {
       console.error('Error saving journal:', error);
     } finally {
@@ -160,11 +164,11 @@ export default function Journal({ profile }: { profile: UserProfile }) {
             exit={{ opacity: 0, y: -10 }}
             className="grid grid-cols-1 md:grid-cols-2 gap-6"
           >
-            {entries.length > 0 ? entries.map((entry) => (
-              <div key={entry.id} className="bg-white p-6 rounded-3xl border border-black/10 shadow-sm hover:shadow-md transition-all">
+            {entries.length > 0 ? entries.map((entry: any) => (
+              <div key={entry._id} className="bg-white p-6 rounded-3xl border border-black/10 shadow-sm hover:shadow-md transition-all">
                 <div className="flex justify-between items-start mb-4">
                   <span className="text-xs font-bold text-black/40 uppercase tracking-widest">
-                    {entry.timestamp ? format(entry.timestamp.toDate(), 'MMMM d, yyyy') : 'Just now'}
+                    {format(entry.timestamp, 'MMMM d, yyyy')}
                   </span>
                   <History className="w-4 h-4 opacity-20" />
                 </div>
@@ -186,7 +190,6 @@ export default function Journal({ profile }: { profile: UserProfile }) {
         )}
       </AnimatePresence>
 
-      {/* Full Entry Modal */}
       <AnimatePresence>
         {selectedEntry && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -206,7 +209,7 @@ export default function Journal({ profile }: { profile: UserProfile }) {
               <div className="space-y-6">
                 <header>
                   <span className="text-xs font-bold text-black/40 uppercase tracking-widest">
-                    {selectedEntry.timestamp ? format(selectedEntry.timestamp.toDate(), 'MMMM d, yyyy') : 'Just now'}
+                    {format(selectedEntry.timestamp, 'MMMM d, yyyy')}
                   </span>
                   <h3 className="text-3xl font-black mt-2">Journal Entry</h3>
                 </header>

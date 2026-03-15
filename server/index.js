@@ -21,14 +21,87 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   displayName: String,
   role: { type: String, default: 'adult' },
+  anonymous: { type: Boolean, default: false },
+  streak: { type: Number, default: 1 },
+  lastActive: { type: Date, default: Date.now },
   preferences: {
     theme: { type: String, default: 'light' },
-    notifications: { type: Boolean, default: true }
+    notifications: { type: Boolean, default: true },
+    parentDashboardEnabled: { type: Boolean, default: false }
   },
   createdAt: { type: Date, default: Date.now }
 });
-
 const User = mongoose.model('User', userSchema);
+
+const moodSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  mood: Number,
+  note: String,
+  timestamp: { type: Date, default: Date.now }
+});
+const Mood = mongoose.model('Mood', moodSchema);
+
+const journalSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  title: String,
+  content: String,
+  mood: Number,
+  timestamp: { type: Date, default: Date.now }
+});
+const Journal = mongoose.model('Journal', journalSchema);
+
+const appointmentSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  therapistId: String,
+  dateTime: Date,
+  duration: Number,
+  status: { type: String, default: 'scheduled' },
+  meetLink: String,
+  totalCost: Number,
+  cancelReason: String,
+  refundAmount: Number
+});
+const Appointment = mongoose.model('Appointment', appointmentSchema);
+
+const messageSchema = new mongoose.Schema({
+  appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  senderId: String,
+  content: String,
+  timestamp: { type: Date, default: Date.now }
+});
+const Message = mongoose.model('Message', messageSchema);
+
+const peerGroupSchema = new mongoose.Schema({
+  name: String,
+  description: String,
+  memberCount: { type: Number, default: 0 },
+  members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  icon: String
+});
+const PeerGroup = mongoose.model('PeerGroup', peerGroupSchema);
+
+const assessmentSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  type: String,
+  score: Number,
+  timestamp: { type: Date, default: Date.now }
+});
+const Assessment = mongoose.model('Assessment', assessmentSchema);
+
+// Auth Middleware
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'No token provided' });
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};
 
 // Auth Routes
 app.post('/api/auth/signup', async (req, res) => {
@@ -38,7 +111,7 @@ app.post('/api/auth/signup', async (req, res) => {
     const user = new User({ email, password: hashedPassword, displayName });
     await user.save();
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
-    res.status(201).json({ token, user: { email, displayName, role: user.role, preferences: user.preferences, uid: user._id } });
+    res.status(201).json({ token, user: { email, displayName, role: user.role, preferences: user.preferences, uid: user._id, streak: user.streak, lastActive: user.lastActive, anonymous: user.anonymous } });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -52,24 +125,132 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
-    res.json({ token, user: { email: user.email, displayName: user.displayName, role: user.role, preferences: user.preferences, uid: user._id } });
+    res.json({ token, user: { email: user.email, displayName: user.displayName, role: user.role, preferences: user.preferences, uid: user._id, streak: user.streak, lastActive: user.lastActive, anonymous: user.anonymous } });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.get('/api/auth/me', async (req, res) => {
+app.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'No token' });
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ email: user.email, displayName: user.displayName, role: user.role, preferences: user.preferences, uid: user._id });
+    res.json({ email: user.email, displayName: user.displayName, role: user.role, preferences: user.preferences, uid: user._id, streak: user.streak, lastActive: user.lastActive, anonymous: user.anonymous });
   } catch (err) {
-    res.status(401).json({ error: 'Invalid token' });
+    res.status(400).json({ error: err.message });
   }
 });
+
+app.patch('/api/auth/profile', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.userId, req.body, { new: true });
+    res.json({ email: user.email, displayName: user.displayName, role: user.role, preferences: user.preferences, uid: user._id, streak: user.streak, lastActive: user.lastActive, anonymous: user.anonymous });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Mood Routes
+app.get('/api/moods', authMiddleware, async (req, res) => {
+  const moods = await Mood.find({ userId: req.userId }).sort({ timestamp: 1 }).limit(30);
+  res.json(moods);
+});
+
+app.post('/api/moods', authMiddleware, async (req, res) => {
+  const mood = new Mood({ ...req.body, userId: req.userId });
+  await mood.save();
+  res.status(201).json(mood);
+});
+
+// Journal Routes
+app.get('/api/journals', authMiddleware, async (req, res) => {
+  const journals = await Journal.find({ userId: req.userId }).sort({ timestamp: -1 });
+  res.json(journals);
+});
+
+app.post('/api/journals', authMiddleware, async (req, res) => {
+  const journal = new Journal({ ...req.body, userId: req.userId });
+  await journal.save();
+  res.status(201).json(journal);
+});
+
+// Appointment Routes
+app.get('/api/appointments', authMiddleware, async (req, res) => {
+  const appointments = await Appointment.find({ userId: req.userId }).sort({ dateTime: -1 });
+  res.json(appointments);
+});
+
+app.post('/api/appointments', authMiddleware, async (req, res) => {
+  const appointment = new Appointment({ ...req.body, userId: req.userId });
+  await appointment.save();
+  res.status(201).json(appointment);
+});
+
+app.patch('/api/appointments/:id', authMiddleware, async (req, res) => {
+  const appointment = await Appointment.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId },
+    req.body,
+    { new: true }
+  );
+  res.json(appointment);
+});
+
+// Message Routes
+app.get('/api/messages/:appointmentId', authMiddleware, async (req, res) => {
+  const messages = await Message.find({ appointmentId: req.params.appointmentId, userId: req.userId }).sort({ timestamp: 1 });
+  res.json(messages);
+});
+
+app.post('/api/messages', authMiddleware, async (req, res) => {
+  const message = new Message({ ...req.body, userId: req.userId });
+  await message.save();
+  res.status(201).json(message);
+});
+
+// Peer Group Routes
+app.get('/api/peergroups', authMiddleware, async (req, res) => {
+  const groups = await PeerGroup.find();
+  res.json(groups);
+});
+
+app.post('/api/peergroups/:id/join', authMiddleware, async (req, res) => {
+  const group = await PeerGroup.findById(req.params.id);
+  if (!group.members.includes(req.userId)) {
+    group.members.push(req.userId);
+    group.memberCount = group.members.length;
+    await group.save();
+  }
+  res.json(group);
+});
+
+app.post('/api/peergroups/:id/leave', authMiddleware, async (req, res) => {
+  const group = await PeerGroup.findById(req.params.id);
+  group.members = group.members.filter(id => id.toString() !== req.userId);
+  group.memberCount = group.members.length;
+  await group.save();
+  res.json(group);
+});
+
+// Assessment Routes
+app.post('/api/assessments', authMiddleware, async (req, res) => {
+  const assessment = new Assessment({ ...req.body, userId: req.userId });
+  await assessment.save();
+  res.status(201).json(assessment);
+});
+
+// Initialize Peer Groups
+const initGroups = async () => {
+  const count = await PeerGroup.countDocuments();
+  if (count === 0) {
+    await PeerGroup.create([
+      { name: 'Anxiety Support', description: 'A safe space to share and cope with anxiety.', memberCount: 0, members: [], icon: 'wind' },
+      { name: 'Stress Management', description: 'Practical tips and support for daily stress.', memberCount: 0, members: [], icon: 'shield' },
+      { name: 'Mindfulness Hub', description: 'Practicing being present together.', memberCount: 0, members: [], icon: 'sparkles' }
+    ]);
+    console.log('Initial peer groups created');
+  }
+};
+initGroups();
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
