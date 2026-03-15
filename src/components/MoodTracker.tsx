@@ -136,9 +136,9 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
           </button>
         </section>
 
-        <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm h-[400px]">
+        <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm">
           <h3 className="text-xl font-bold mb-6">Mood Trends</h3>
-          <div className="h-full pb-10">
+          <div className="w-full h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
