@@ -100,16 +100,22 @@ const peerGroupSchema = new mongoose.Schema({
 });
 const PeerGroup = mongoose.model('PeerGroup', peerGroupSchema);
 
-// --- NEW POST SCHEMA FOR PEER GROUPS ---
+// --- NEW POST SCHEMA FOR PEER GROUPS (WITH COMMENTS) ---
 const postSchema = new mongoose.Schema({
   groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'PeerGroup' },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   authorName: String,
   content: String,
-  timestamp: { type: Date, default: Date.now }
+  timestamp: { type: Date, default: Date.now },
+  comments: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    authorName: String,
+    content: String,
+    timestamp: { type: Date, default: Date.now }
+  }]
 });
 const Post = mongoose.model('Post', postSchema);
-// ---------------------------------------
+// -------------------------------------------------------
 
 const assessmentSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -261,7 +267,7 @@ app.post('/api/peergroups/:id/leave', authMiddleware, async (req, res) => {
   res.json(group);
 });
 
-// --- NEW POST ROUTES FOR PEER GROUPS ---
+// --- POST & COMMENT ROUTES FOR PEER GROUPS ---
 app.get('/api/peergroups/:id/posts', authMiddleware, async (req, res) => {
   try {
     const posts = await Post.find({ groupId: req.params.id }).sort({ timestamp: -1 });
@@ -286,7 +292,26 @@ app.post('/api/peergroups/:id/posts', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to create post' });
   }
 });
-// ---------------------------------------
+
+app.post('/api/peergroups/posts/:postId/comments', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    const post = await Post.findById(req.params.postId);
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+
+    post.comments.push({
+      userId: req.userId,
+      authorName: user.displayName || 'Anonymous',
+      content: req.body.content
+    });
+    
+    await post.save();
+    res.status(201).json(post);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add comment' });
+  }
+});
+// ---------------------------------------------
 
 // Assessment Routes
 app.post('/api/assessments', authMiddleware, async (req, res) => {
