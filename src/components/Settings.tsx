@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserProfile, UserRole } from '../types';
 import { Settings as SettingsIcon, User, Shield, Bell, Trash2, Check, Loader2, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import getApiUrl from '../lib/api';
 
 interface SettingsProps {
   profile: UserProfile;
@@ -17,7 +18,7 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
     setSuccess(false);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/auth/profile', {
+      const response = await fetch(getApiUrl('/api/auth/profile'), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

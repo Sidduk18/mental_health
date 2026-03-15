@@ -10,12 +10,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const MONGODB_URI = "mongodb+srv://skumar19_db_user:mogF5ToZuNHv8d0k@mindanchor.l4ira1s.mongodb.net/mindanchor?appName=MindAnchor";
-const JWT_SECRET = "your_jwt_secret_key_here";
+const MONGODB_URI = process.env.MONGODB_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log('MongoDB connection error:', err));
+  .then(() => {
+    console.log('MongoDB connected');
+    initGroups();
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
@@ -241,7 +247,7 @@ app.post('/api/assessments', authMiddleware, async (req, res) => {
 
 // Serve static files in production
 app.use(express.static(path.join(__dirname, '../dist')));
-app.get('*', (req, res) => {
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
@@ -257,7 +263,6 @@ const initGroups = async () => {
     console.log('Initial peer groups created');
   }
 };
-initGroups();
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
