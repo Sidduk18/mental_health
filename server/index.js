@@ -100,6 +100,17 @@ const peerGroupSchema = new mongoose.Schema({
 });
 const PeerGroup = mongoose.model('PeerGroup', peerGroupSchema);
 
+// --- NEW POST SCHEMA FOR PEER GROUPS ---
+const postSchema = new mongoose.Schema({
+  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'PeerGroup' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  authorName: String,
+  content: String,
+  timestamp: { type: Date, default: Date.now }
+});
+const Post = mongoose.model('Post', postSchema);
+// ---------------------------------------
+
 const assessmentSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   type: String,
@@ -249,6 +260,33 @@ app.post('/api/peergroups/:id/leave', authMiddleware, async (req, res) => {
   await group.save();
   res.json(group);
 });
+
+// --- NEW POST ROUTES FOR PEER GROUPS ---
+app.get('/api/peergroups/:id/posts', authMiddleware, async (req, res) => {
+  try {
+    const posts = await Post.find({ groupId: req.params.id }).sort({ timestamp: -1 });
+    res.json(posts);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch posts' });
+  }
+});
+
+app.post('/api/peergroups/:id/posts', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    const post = new Post({
+      groupId: req.params.id,
+      userId: req.userId,
+      authorName: user.displayName || 'Anonymous',
+      content: req.body.content
+    });
+    await post.save();
+    res.status(201).json(post);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create post' });
+  }
+});
+// ---------------------------------------
 
 // Assessment Routes
 app.post('/api/assessments', authMiddleware, async (req, res) => {
