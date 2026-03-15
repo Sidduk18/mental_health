@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, PeerGroup } from '../types';
 import { format } from 'date-fns';
-import { Users, Search, MessageSquare, ChevronRight, Loader2, Sparkles, Shield, Wind, ArrowLeft, Send } from 'lucide-react';
+import { Users, Search, MessageSquare, ChevronRight, Loader2, Sparkles, Shield, Wind, ArrowLeft, Send, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import getApiUrl from '../lib/api';
 
@@ -11,11 +11,13 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
   const [searchTerm, setSearchTerm] = useState('');
   const [joiningId, setJoiningId] = useState<string | null>(null);
   
-  // New state for Reddit-style posts
+  // State for posts & comments
   const [activeGroup, setActiveGroup] = useState<any | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [newPost, setNewPost] = useState('');
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState('');
 
   const fetchGroups = async () => {
     const token = localStorage.getItem('auth_token');
@@ -53,7 +55,7 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
   };
 
   const handleJoinLeave = async (e: React.MouseEvent, group: PeerGroup) => {
-    e.stopPropagation(); // Prevent opening the group when clicking the button
+    e.stopPropagation();
     const groupId = group.id || (group as any)._id;
     setJoiningId(groupId);
     const token = localStorage.getItem('auth_token');
@@ -74,7 +76,7 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
   };
 
   const handleOpenGroup = (group: any) => {
-    if (!group.members.includes(profile.uid)) return; // Only allow members to view
+    if (!group.members.includes(profile.uid)) return;
     setActiveGroup(group);
     fetchPosts(group._id || group.id);
   };
@@ -96,6 +98,26 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
       fetchPosts(groupId);
     } catch (error) {
       console.error('Error creating post:', error);
+    }
+  };
+
+  const handleAddComment = async (postId: string) => {
+    if (!commentText.trim()) return;
+    const token = localStorage.getItem('auth_token');
+    try {
+      await fetch(getApiUrl(`/api/peergroups/posts/${postId}/comments`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: commentText })
+      });
+      setCommentText('');
+      setReplyingTo(null);
+      fetchPosts(activeGroup._id || activeGroup.id);
+    } catch (error) {
+      console.error('Error adding comment:', error);
     }
   };
 
@@ -126,7 +148,7 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
     return (
       <div className="space-y-6 pb-20">
         <button 
-          onClick={() => setActiveGroup(null)}
+          onClick={() => { setActiveGroup(null); setReplyingTo(null); }}
           className="flex items-center space-x-2 text-sm font-bold text-black/50 hover:text-black transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -166,20 +188,80 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
           ) : posts.length > 0 ? (
             posts.map(post => (
               <div key={post._id} className="bg-white p-6 rounded-[24px] border border-black/5 shadow-sm space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-black/40" />
-                    </div>
+                {/* Main Post Content */}
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center shrink-0">
+                    <User className="w-5 h-5 text-black/40" />
+                  </div>
+                  <div className="flex-1 space-y-2">
                     <div>
                       <h4 className="font-bold text-sm">{post.authorName}</h4>
                       <p className="text-[10px] text-black/40 font-bold uppercase tracking-widest">
                         {format(new Date(post.timestamp), 'MMM d, h:mm a')}
                       </p>
                     </div>
+                    <p className="text-black/80 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                    
+                    <button 
+                      onClick={() => setReplyingTo(replyingTo === post._id ? null : post._id)}
+                      className="text-xs font-bold text-black/50 hover:text-black flex items-center space-x-1 pt-2 transition-colors"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>{post.comments?.length || 0} Comments</span>
+                    </button>
                   </div>
                 </div>
-                <p className="text-black/80 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+
+                {/* Comments Section */}
+                <div className="pl-13 space-y-3 pt-2">
+                  {post.comments?.map((comment: any, idx: number) => (
+                    <div key={idx} className="flex items-start space-x-3 bg-neutral-50 p-4 rounded-2xl">
+                       <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shrink-0 border border-black/5">
+                        <User className="w-4 h-4 text-black/30" />
+                      </div>
+                      <div>
+                        <div className="flex items-baseline space-x-2">
+                          <h5 className="font-bold text-xs">{comment.authorName}</h5>
+                          <span className="text-[9px] text-black/30 font-bold uppercase">
+                            {format(new Date(comment.timestamp), 'MMM d')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-black/70 mt-1">{comment.content}</p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Add Comment Input */}
+                  <AnimatePresence>
+                    {replyingTo === post._id && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="flex space-x-2 pt-2"
+                      >
+                        <input
+                          type="text"
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="Write a comment..."
+                          className="flex-1 bg-neutral-50 border border-black/10 rounded-xl px-4 py-2 text-sm outline-none focus:border-black transition-colors"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleAddComment(post._id);
+                          }}
+                        />
+                        <button 
+                          onClick={() => handleAddComment(post._id)}
+                          disabled={!commentText.trim()}
+                          className="bg-black text-white px-4 rounded-xl disabled:opacity-50"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             ))
           ) : (
