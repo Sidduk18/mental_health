@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "server": "cd server && node index.js",
-    "start": "npm run server & npm run dev",
+    "start": "npm run server",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
