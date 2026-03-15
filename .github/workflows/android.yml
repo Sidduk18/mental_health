@@ -36,9 +36,16 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: 'gradle'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+
+      - name: Debug Versions
+        run: |
+          java -version
+          node -version
+          javac -version
 
       - name: Initialize Capacitor (if not exists)
         run: |

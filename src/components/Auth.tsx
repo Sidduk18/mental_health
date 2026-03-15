@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   RecaptchaVerifier,
@@ -19,12 +21,27 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
   const [otp, setOtp] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [authMethod, setAuthMethod] = useState<'email' | 'phone' | null>(null);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          onAuthSuccess();
+        }
+      } catch (err: any) {
+        setError(err.message);
+      }
+    };
+    handleRedirect();
+  }, [onAuthSuccess]);
 
   useEffect(() => {
     if (authMethod === 'phone' && !window.recaptchaVerifier) {
@@ -62,7 +79,8 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
     setLoading(true);
     try {
       const appVerifier = window.recaptchaVerifier;
-      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+      const result = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
       setConfirmationResult(result);
     } catch (err: any) {
       setError(err.message);
@@ -91,8 +109,15 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
     setError('');
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      onAuthSuccess();
+      // Check if it's a mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        await signInWithPopup(auth, googleProvider);
+        onAuthSuccess();
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -206,14 +231,29 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
 
               {!confirmationResult ? (
                 <form onSubmit={handlePhoneSignIn} className="space-y-4">
-                  <input
-                    type="tel"
-                    required
-                    className="w-full px-4 py-4 border border-black/10 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all"
-                    placeholder="+1 234 567 8900"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                  />
+                  <div className="flex space-x-2">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="w-24 px-2 py-4 border border-black/10 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all bg-white font-bold text-sm"
+                    >
+                      <option value="+91">+91 (IN)</option>
+                      <option value="+1">+1 (US)</option>
+                      <option value="+44">+44 (UK)</option>
+                      <option value="+971">+971 (UAE)</option>
+                      <option value="+61">+61 (AU)</option>
+                      <option value="+65">+65 (SG)</option>
+                      <option value="+1">+1 (CA)</option>
+                    </select>
+                    <input
+                      type="tel"
+                      required
+                      className="flex-1 px-4 py-4 border border-black/10 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all"
+                      placeholder="1234567890"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                    />
+                  </div>
                   {error && <p className="text-red-500 text-xs text-center font-bold">{error}</p>}
                   <button
                     type="submit"
