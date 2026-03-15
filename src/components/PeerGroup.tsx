@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, PeerGroup } from '../types';
-import { Users, Search, MessageSquare, ChevronRight, Loader2, Sparkles, Shield, Wind } from 'lucide-react';
+import { format } from 'date-fns';
+import { Users, Search, MessageSquare, ChevronRight, Loader2, Sparkles, Shield, Wind, ArrowLeft, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import getApiUrl from '../lib/api';
 
@@ -9,6 +10,12 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  
+  // New state for Reddit-style posts
+  const [activeGroup, setActiveGroup] = useState<any | null>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [newPost, setNewPost] = useState('');
+  const [loadingPosts, setLoadingPosts] = useState(false);
 
   const fetchGroups = async () => {
     const token = localStorage.getItem('auth_token');
@@ -29,12 +36,29 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
     fetchGroups();
   }, []);
 
-  const handleJoinLeave = async (group: PeerGroup) => {
-    setJoiningId(group.id || (group as any)._id);
+  const fetchPosts = async (groupId: string) => {
+    setLoadingPosts(true);
+    const token = localStorage.getItem('auth_token');
+    try {
+      const response = await fetch(getApiUrl(`/api/peergroups/${groupId}/posts`), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setPosts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching posts:', err);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  const handleJoinLeave = async (e: React.MouseEvent, group: PeerGroup) => {
+    e.stopPropagation(); // Prevent opening the group when clicking the button
+    const groupId = group.id || (group as any)._id;
+    setJoiningId(groupId);
     const token = localStorage.getItem('auth_token');
     const isMember = group.members.includes(profile.uid);
     const action = isMember ? 'leave' : 'join';
-    const groupId = group.id || (group as any)._id;
 
     try {
       await fetch(getApiUrl(`/api/peergroups/${groupId}/${action}`), {
@@ -46,6 +70,32 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
       console.error('Error joining/leaving group:', err);
     } finally {
       setJoiningId(null);
+    }
+  };
+
+  const handleOpenGroup = (group: any) => {
+    if (!group.members.includes(profile.uid)) return; // Only allow members to view
+    setActiveGroup(group);
+    fetchPosts(group._id || group.id);
+  };
+
+  const handleCreatePost = async () => {
+    if (!newPost.trim() || !activeGroup) return;
+    const token = localStorage.getItem('auth_token');
+    const groupId = activeGroup._id || activeGroup.id;
+    try {
+      await fetch(getApiUrl(`/api/peergroups/${groupId}/posts`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: newPost })
+      });
+      setNewPost('');
+      fetchPosts(groupId);
+    } catch (error) {
+      console.error('Error creating post:', error);
     }
   };
 
@@ -71,6 +121,78 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
     );
   }
 
+  // --- GROUP FEED VIEW ---
+  if (activeGroup) {
+    return (
+      <div className="space-y-6 pb-20">
+        <button 
+          onClick={() => setActiveGroup(null)}
+          className="flex items-center space-x-2 text-sm font-bold text-black/50 hover:text-black transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Groups</span>
+        </button>
+        
+        <div className="bg-black text-white p-8 rounded-[32px] flex items-center space-x-6">
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+            {getIcon(activeGroup.icon)}
+          </div>
+          <div>
+            <h2 className="text-3xl font-black">{activeGroup.name}</h2>
+            <p className="text-white/60">{activeGroup.description}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-[32px] border border-black/10 shadow-sm flex space-x-4">
+          <textarea
+            value={newPost}
+            onChange={(e) => setNewPost(e.target.value)}
+            placeholder={`Share something with ${activeGroup.name}...`}
+            className="flex-1 bg-neutral-50 border border-black/5 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-black transition-all resize-none h-24"
+          />
+          <button 
+            onClick={handleCreatePost}
+            disabled={!newPost.trim()}
+            className="bg-black text-white px-6 rounded-2xl font-bold flex items-center space-x-2 disabled:opacity-50 hover:shadow-lg transition-all"
+          >
+            <Send className="w-5 h-5" />
+            <span className="hidden md:inline">Post</span>
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {loadingPosts ? (
+            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
+          ) : posts.length > 0 ? (
+            posts.map(post => (
+              <div key={post._id} className="bg-white p-6 rounded-[24px] border border-black/5 shadow-sm space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-black/40" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm">{post.authorName}</h4>
+                      <p className="text-[10px] text-black/40 font-bold uppercase tracking-widest">
+                        {format(new Date(post.timestamp), 'MMM d, h:mm a')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-black/80 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-20 text-black/40 italic">
+              Be the first to post in this group!
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // --- GROUPS LIST VIEW ---
   return (
     <div className="space-y-8 pb-20">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -93,12 +215,15 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredGroups.map((group: any) => {
           const isMember = group.members.includes(profile.uid);
-          const groupId = group._id;
+          const groupId = group._id || group.id;
           return (
             <motion.div
               key={groupId}
+              onClick={() => handleOpenGroup(group)}
               layout
-              className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm hover:shadow-md transition-all flex flex-col h-full"
+              className={`p-8 rounded-[32px] border border-black/10 shadow-sm transition-all flex flex-col h-full ${
+                isMember ? 'bg-white cursor-pointer hover:shadow-lg hover:border-black/30' : 'bg-neutral-50/50'
+              }`}
             >
               <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center mb-6">
                 {getIcon(group.icon)}
@@ -115,7 +240,7 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
                   <span>{group.memberCount} members</span>
                 </div>
                 <button 
-                  onClick={() => handleJoinLeave(group)}
+                  onClick={(e) => handleJoinLeave(e, group)}
                   disabled={joiningId === groupId}
                   className={`px-6 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
                     isMember
@@ -126,7 +251,7 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
                   {joiningId === groupId ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
                   ) : isMember ? (
-                    'Leave Group'
+                    'Leave'
                   ) : (
                     <>
                       <span>Join</span>
