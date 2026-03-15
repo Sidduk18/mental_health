@@ -104,9 +104,9 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
               </div>
               <button 
                 onClick={() => updateProfile({ anonymous: !profile.anonymous })}
-                className={`w-12 h-6 rounded-full transition-colors relative ${profile.anonymous ? 'bg-black' : 'bg-black/10'}`}
+                className={`w-12 h-6 rounded-full transition-colors relative ${profile.anonymous ? 'bg-black dark:bg-white' : 'bg-black/10 dark:bg-white/20'}`}
               >
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${profile.anonymous ? 'left-7' : 'left-1'}`} />
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white dark:bg-black transition-all ${profile.anonymous ? 'left-7' : 'left-1'}`} />
               </button>
             </div>
 
@@ -118,9 +118,9 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
                 </div>
                 <button 
                   onClick={() => updateProfile({ preferences: { ...profile.preferences, parentDashboardEnabled: !profile.preferences.parentDashboardEnabled } })}
-                  className={`w-12 h-6 rounded-full transition-colors relative ${profile.preferences.parentDashboardEnabled ? 'bg-black' : 'bg-black/10'}`}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${profile.preferences.parentDashboardEnabled ? 'bg-black dark:bg-white' : 'bg-black/10 dark:bg-white/20'}`}
                 >
-                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${profile.preferences.parentDashboardEnabled ? 'left-7' : 'left-1'}`} />
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white dark:bg-black transition-all ${profile.preferences.parentDashboardEnabled ? 'left-7' : 'left-1'}`} />
                 </button>
               </div>
             )}
@@ -140,9 +140,9 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
             </div>
             <button 
               onClick={() => updateProfile({ preferences: { ...profile.preferences, notifications: !profile.preferences.notifications } })}
-              className={`w-12 h-6 rounded-full transition-colors relative ${profile.preferences.notifications ? 'bg-black' : 'bg-black/10'}`}
+              className={`w-12 h-6 rounded-full transition-colors relative ${profile.preferences.notifications ? 'bg-black dark:bg-white' : 'bg-black/10 dark:bg-white/20'}`}
             >
-              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${profile.preferences.notifications ? 'left-7' : 'left-1'}`} />
+              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white dark:bg-black transition-all ${profile.preferences.notifications ? 'left-7' : 'left-1'}`} />
             </button>
           </div>
         </section>
