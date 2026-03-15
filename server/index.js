@@ -10,8 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const MONGODB_URI = process.env.MONGODB_URI;
-const JWT_SECRET = process.env.JWT_SECRET;
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://skumar19_db_user:mogF5ToZuNHv8d0k@mindanchor.l4ira1s.mongodb.net/mindanchor?appName=MindAnchor";
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_here";
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
@@ -247,8 +247,17 @@ app.post('/api/assessments', authMiddleware, async (req, res) => {
 
 // Serve static files in production
 app.use(express.static(path.join(__dirname, '../dist')));
-app.get('/', (req, res) => {
+
+// Fallback for SPA routing
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
   res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
 // Initialize Peer Groups
