@@ -95,33 +95,33 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
   return (
     <div className="space-y-8 pb-20">
       <header>
-        <h2 className="text-3xl font-black tracking-tight">Mood Tracker</h2>
-        <p className="text-black/50">Visualize your emotional journey over time.</p>
+        <h2 className="text-3xl font-black tracking-tight text-black dark:text-white">Mood Tracker</h2>
+        <p className="text-black/50 dark:text-white/50">Visualize your emotional journey over time.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
-          <h3 className="text-xl font-bold">How are you right now?</h3>
-          <div className="flex justify-between items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+        <section className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm space-y-6">
+          <h3 className="text-lg md:text-xl font-bold text-black dark:text-white">How are you right now?</h3>
+          <div className="grid grid-cols-5 gap-1 md:gap-2 items-center">
             {moodOptions.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setSelectedMood(opt.value)}
-                className={`flex flex-col items-center space-y-2 p-4 rounded-2xl transition-all ${
+                className={`flex flex-col items-center space-y-2 p-2 md:p-4 rounded-2xl transition-all ${
                   selectedMood === opt.value 
-                    ? 'bg-black text-white scale-110 shadow-lg' 
+                    ? 'bg-black text-white scale-105 md:scale-110 shadow-lg'
                     : 'hover:bg-black/5 text-black/40'
                 }`}
               >
-                <opt.icon className={`w-8 h-8 ${selectedMood === opt.value ? 'text-white' : opt.color}`} />
-                <span className="text-[10px] font-bold uppercase tracking-tighter">{opt.label}</span>
+                <opt.icon className={`w-6 h-6 md:w-8 md:h-8 ${selectedMood === opt.value ? 'text-white' : opt.color}`} />
+                <span className="text-[8px] md:text-[10px] font-bold uppercase tracking-tighter text-center">{opt.label}</span>
               </button>
             ))}
           </div>
 
           <textarea
             placeholder="Add a note about how you're feeling (optional)..."
-            className="w-full p-4 bg-neutral-50 border border-black/5 rounded-2xl focus:ring-2 focus:ring-black outline-none min-h-[100px] transition-all"
+            className="w-full p-4 bg-neutral-50 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-black dark:focus:ring-white outline-none min-h-[100px] transition-all text-black dark:text-white"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
@@ -129,16 +129,16 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
           <button
             onClick={handleLogMood}
             disabled={selectedMood === null || isSubmitting}
-            className="w-full bg-black text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 disabled:opacity-50 hover:shadow-xl transition-all"
+            className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 disabled:opacity-50 hover:shadow-xl transition-all"
           >
             {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             <span>Log Mood</span>
           </button>
         </section>
 
-        <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm">
-          <h3 className="text-xl font-bold mb-6">Mood Trends</h3>
-          <div className="w-full h-[300px]">
+        <section className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm">
+          <h3 className="text-lg md:text-xl font-bold mb-6 text-black dark:text-white">Mood Trends</h3>
+          <div className="w-full h-[250px] md:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
@@ -148,12 +148,12 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
                   ticks={[1, 2, 3, 4, 5]} 
                   tickFormatter={(val) => {
                     const label = moodOptions.find(o => o.value === val)?.label || '';
-                    return `${val} - ${label}`;
+                    return `${val} - ${label.substring(0, 3)}`; // Shorten label for mobile
                   }}
                   axisLine={false} 
                   tickLine={false}
                   tick={{ fontSize: 9, fontWeight: 700, fill: 'var(--chart-text)' }}
-                  width={120}
+                  width={60} // Reduced width for mobile
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Line 
@@ -161,8 +161,8 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
                   dataKey="mood" 
                   stroke="var(--chart-line)"
                   strokeWidth={4}
-                  dot={{ r: 6, fill: 'var(--chart-line)', strokeWidth: 2, stroke: '#fff' }}
-                  activeDot={{ r: 8, fill: 'var(--chart-line)' }}
+                  dot={{ r: 4, fill: 'var(--chart-line)', strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 6, fill: 'var(--chart-line)' }}
                   connectNulls
                 />
               </LineChart>
@@ -171,24 +171,24 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
         </section>
       </div>
 
-      <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm">
-        <h3 className="text-xl font-bold mb-6">Mood History</h3>
+      <section className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm">
+        <h3 className="text-lg md:text-xl font-bold mb-6 text-black dark:text-white">Mood History</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {moods.slice().reverse().map((m) => {
             const option = moodOptions.find(o => o.value === m.mood);
             const Icon = option?.icon;
             return (
-              <div key={m._id} className="p-4 bg-neutral-50 rounded-2xl space-y-2">
+              <div key={m._id} className="p-4 bg-neutral-50 dark:bg-white/5 rounded-2xl space-y-2">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
                     {Icon && <Icon className={`w-5 h-5 ${option?.color}`} />}
-                    <span className="font-bold">{option?.label}</span>
+                    <span className="font-bold text-black dark:text-white">{option?.label}</span>
                   </div>
-                  <span className="text-xs font-bold opacity-30">
+                  <span className="text-xs font-bold opacity-30 text-black dark:text-white">
                     {format(m.timestamp, 'MMM d, h:mm a')}
                   </span>
                 </div>
-                {m.note && <p className="text-sm text-black/60 italic">"{m.note}"</p>}
+                {m.note && <p className="text-sm text-black/60 dark:text-white/60 italic">"{m.note}"</p>}
               </div>
             );
           })}

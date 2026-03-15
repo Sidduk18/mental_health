@@ -177,21 +177,21 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
   const dates = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(new Date()), i + 1));
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-6 md:space-y-8 pb-20">
       <header>
-        <h2 className="text-3xl font-black tracking-tight">Therapy & Counselling</h2>
-        <p className="text-black/50">Professional support tailored to your needs.</p>
+        <h2 className="text-3xl font-black tracking-tight text-black dark:text-white">Therapy & Counselling</h2>
+        <p className="text-black/50 dark:text-white/50">Professional support tailored to your needs.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <section className="lg:col-span-1 space-y-6">
-          <h3 className="text-xl font-bold flex items-center space-x-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        <section className="lg:col-span-1 space-y-4 md:space-y-6">
+          <h3 className="text-lg md:text-xl font-bold flex items-center space-x-2 text-black dark:text-white">
             <Clock className="w-5 h-5" />
             <span>Your Sessions</span>
           </h3>
           <div className="space-y-4">
             {appointments.length > 0 ? appointments.map((app: any) => (
-              <div key={app._id} className="p-6 rounded-3xl border shadow-sm space-y-4 bg-white border-black/10">
+              <div key={app._id} className="p-5 md:p-6 rounded-[32px] border shadow-sm space-y-4 bg-white dark:bg-black/20 border-black/10 dark:border-white/10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <img 
@@ -200,8 +200,8 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                       alt="" 
                     />
                     <div>
-                      <h4 className="font-bold">{therapists.find(t => t.id === app.therapistId)?.name || 'Therapist'}</h4>
-                      <p className="text-[10px] font-bold text-black/30 uppercase tracking-widest">
+                      <h4 className="font-bold text-black dark:text-white">{therapists.find(t => t.id === app.therapistId)?.name || 'Therapist'}</h4>
+                      <p className="text-[10px] font-bold text-black/30 dark:text-white/30 uppercase tracking-widest">
                         {format(app.dateTime, 'MMM d, h:mm a')}
                       </p>
                     </div>
@@ -239,12 +239,12 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
           </div>
         </section>
 
-        <section className="lg:col-span-2 space-y-6">
-          <h3 className="text-xl font-bold flex items-center space-x-2">
+        <section className="lg:col-span-2 space-y-4 md:space-y-6">
+          <h3 className="text-lg md:text-xl font-bold flex items-center space-x-2 text-black dark:text-white">
             <CalendarIcon className="w-5 h-5" />
             <span>Book a New Session</span>
           </h3>
-          <div className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm min-h-[400px]">
+          <div className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm min-h-[400px]">
             {/* Keeping your existing booking logic intact */}
             {bookingStep === 'therapist' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -252,37 +252,37 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                   <button 
                     key={t.id}
                     onClick={() => { setSelectedTherapist(t); setBookingStep('date'); }}
-                    className="text-left p-6 rounded-3xl border border-black/5 hover:border-black/20 hover:bg-black/5 transition-all flex items-center space-x-4 group"
+                    className="text-left p-4 md:p-6 rounded-[24px] md:rounded-3xl border border-black/5 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center space-x-4 group"
                   >
-                    <img src={t.image} alt="" className="w-16 h-16 rounded-2xl object-cover" />
+                    <img src={t.image} alt="" className="w-12 h-12 md:w-16 md:h-16 rounded-2xl object-cover" />
                     <div className="flex-1">
-                      <h4 className="font-bold">{t.name}</h4>
-                      <p className="text-xs text-black/50">{t.specialty}</p>
+                      <h4 className="font-bold text-black dark:text-white text-sm md:text-base">{t.name}</h4>
+                      <p className="text-xs text-black/50 dark:text-white/50">{t.specialty}</p>
                     </div>
-                    <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all" />
+                    <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all text-black dark:text-white" />
                   </button>
                 ))}
               </div>
             )}
             {bookingStep === 'date' && selectedTherapist && (
               <div className="space-y-6">
-                <div className="flex items-center space-x-4 mb-8">
-                  <button onClick={() => setBookingStep('therapist')} className="p-2 hover:bg-black/5 rounded-full"><X className="w-5 h-5" /></button>
-                  <h4 className="font-bold">Select Date for {selectedTherapist.name}</h4>
+                <div className="flex items-center space-x-4 mb-4 md:mb-8">
+                  <button onClick={() => setBookingStep('therapist')} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full"><X className="w-5 h-5 text-black dark:text-white" /></button>
+                  <h4 className="font-bold text-black dark:text-white">Select Date</h4>
                 </div>
                 <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
                   {dates.map((date) => (
                     <button
                       key={date.toISOString()}
                       onClick={() => { setSelectedDate(date); setBookingStep('time'); }}
-                      className={`p-4 rounded-2xl border transition-all text-center ${
+                      className={`p-2 md:p-4 rounded-2xl border transition-all text-center ${
                         selectedDate && isSameDay(selectedDate, date)
-                          ? 'bg-black text-white border-black'
-                          : 'border-black/5 hover:border-black/20'
+                          ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white'
+                          : 'border-black/5 dark:border-white/5 hover:border-black/20 dark:hover:border-white/20 text-black dark:text-white'
                       }`}
                     >
                       <p className="text-[10px] font-bold uppercase opacity-50">{format(date, 'EEE')}</p>
-                      <p className="text-lg font-black">{format(date, 'd')}</p>
+                      <p className="text-base md:text-lg font-black">{format(date, 'd')}</p>
                     </button>
                   ))}
                 </div>
@@ -362,7 +362,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            className="fixed bottom-0 right-8 w-full max-w-md bg-white border border-black/10 rounded-t-[32px] shadow-2xl z-50 flex flex-col h-[500px]"
+            className="fixed bottom-0 left-0 right-0 md:left-auto md:right-8 w-full md:max-w-md bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/10 rounded-t-[32px] shadow-2xl z-[100] flex flex-col h-[80vh] md:h-[500px]"
           >
             <div className="p-6 border-b border-black/5 flex justify-between items-center bg-black text-white rounded-t-[32px]">
               <div className="flex items-center space-x-3">
