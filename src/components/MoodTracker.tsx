@@ -147,7 +147,7 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
           <div className="h-full pb-10">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#00000010" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
                 <XAxis 
                   dataKey="fullDate" 
                   axisLine={false} 
@@ -157,20 +157,23 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
                 <YAxis 
                   domain={[1, 5]} 
                   ticks={[1, 2, 3, 4, 5]} 
-                  tickFormatter={(val) => moodOptions.find(o => o.value === val)?.label || val}
+                  tickFormatter={(val) => {
+                    const label = moodOptions.find(o => o.value === val)?.label || '';
+                    return `${val} - ${label}`;
+                  }}
                   axisLine={false} 
                   tickLine={false}
-                  tick={{ fontSize: 9, fontWeight: 700, fill: '#666' }}
-                  width={80}
+                  tick={{ fontSize: 9, fontWeight: 700, fill: 'var(--chart-text)' }}
+                  width={120}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Line 
                   type="monotone" 
                   dataKey="mood" 
-                  stroke="#000" 
+                  stroke="var(--chart-line)"
                   strokeWidth={4}
-                  dot={{ r: 6, fill: '#000', strokeWidth: 2, stroke: '#fff' }}
-                  activeDot={{ r: 8, fill: '#000' }}
+                  dot={{ r: 6, fill: 'var(--chart-line)', strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 8, fill: 'var(--chart-line)' }}
                   connectNulls
                 />
               </LineChart>

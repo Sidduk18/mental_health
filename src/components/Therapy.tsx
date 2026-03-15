@@ -18,6 +18,15 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+const therapists = [
+  { id: 't1', name: 'Dr. Sarah Chen', specialty: 'Anxiety & Stress', image: 'https://picsum.photos/seed/sarah/100/100', role: 'adult', bio: 'Specializing in cognitive behavioral therapy for over 10 years.' },
+  { id: 't2', name: 'Mark Thompson', specialty: 'Teen Counseling', image: 'https://picsum.photos/seed/mark/100/100', role: 'teen', bio: 'Focusing on adolescent mental health and peer relationships.' },
+  { id: 't3', name: 'Dr. Elena Rodriguez', specialty: 'Relationship & Family', image: 'https://picsum.photos/seed/elena/100/100', role: 'adult', bio: 'Expert in family dynamics and systemic therapy.' },
+  { id: 't4', name: 'Priya Sharma', specialty: 'Academic Stress', image: 'https://picsum.photos/seed/priya/100/100', role: 'teen', bio: 'Helping students manage exam anxiety and career pressure.' },
+  { id: 't5', name: 'Dr. Amit Patel', specialty: 'Workplace Wellness', image: 'https://picsum.photos/seed/amit/100/100', role: 'adult', bio: 'Specialist in corporate mental health and burnout prevention.' },
+  { id: 't6', name: 'Sanya Gupta', specialty: 'Self-Esteem & Identity', image: 'https://picsum.photos/seed/sanya/100/100', role: 'teen', bio: 'Empowering teens to build confidence and navigate social identity.' },
+];
+
 export default function Therapy({ profile }: { profile: UserProfile }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedTherapist, setSelectedTherapist] = useState<any | null>(null);
@@ -30,15 +39,6 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
-
-  const therapists = [
-    { id: 't1', name: 'Dr. Sarah Chen', specialty: 'Anxiety & Stress', image: 'https://picsum.photos/seed/sarah/100/100', role: 'adult', bio: 'Specializing in cognitive behavioral therapy for over 10 years.' },
-    { id: 't2', name: 'Mark Thompson', specialty: 'Teen Counseling', image: 'https://picsum.photos/seed/mark/100/100', role: 'teen', bio: 'Focusing on adolescent mental health and peer relationships.' },
-    { id: 't3', name: 'Dr. Elena Rodriguez', specialty: 'Relationship & Family', image: 'https://picsum.photos/seed/elena/100/100', role: 'adult', bio: 'Expert in family dynamics and systemic therapy.' },
-    { id: 't4', name: 'Priya Sharma', specialty: 'Academic Stress', image: 'https://picsum.photos/seed/priya/100/100', role: 'teen', bio: 'Helping students manage exam anxiety and career pressure.' },
-    { id: 't5', name: 'Dr. Amit Patel', specialty: 'Workplace Wellness', image: 'https://picsum.photos/seed/amit/100/100', role: 'adult', bio: 'Specialist in corporate mental health and burnout prevention.' },
-    { id: 't6', name: 'Sanya Gupta', specialty: 'Self-Esteem & Identity', image: 'https://picsum.photos/seed/sanya/100/100', role: 'teen', bio: 'Empowering teens to build confidence and navigate social identity.' },
-  ];
 
   const filteredTherapists = therapists.filter(t => t.role === profile.role);
 
@@ -56,14 +56,18 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
     const q = query(
       collection(db, 'appointments'),
       where('userId', '==', profile.uid),
-      where('status', '==', 'scheduled'),
       orderBy('dateTime', 'desc')
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment)));
+      const allApps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+      const filteredApps = allApps.filter(app => {
+        const therapist = therapists.find(t => t.id === app.therapistId);
+        return therapist?.role === profile.role;
+      });
+      setAppointments(filteredApps);
     });
     return () => unsubscribe();
-  }, [profile.uid]);
+  }, [profile.uid, profile.role]);
 
   useEffect(() => {
     if (activeChat) {
