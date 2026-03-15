@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase';
 import { UserProfile, UserRole } from '../types';
 import { Settings as SettingsIcon, User, Shield, Bell, Trash2, Check, Loader2, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -18,9 +16,17 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
     setIsUpdating(true);
     setSuccess(false);
     try {
-      const docRef = doc(db, 'users', profile.uid);
-      await updateDoc(docRef, updates);
-      setProfile({ ...profile, ...updates });
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/auth/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updates)
+      });
+      const data = await response.json();
+      setProfile(data);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
@@ -38,7 +44,6 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Profile Section */}
         <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
           <h3 className="text-xl font-bold flex items-center space-x-2">
             <User className="w-5 h-5" />
@@ -64,7 +69,6 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
           </div>
         </section>
 
-        {/* Theme Section */}
         <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
           <h3 className="text-xl font-bold flex items-center space-x-2">
             <Sun className="w-5 h-5" />
@@ -90,7 +94,6 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
           </div>
         </section>
 
-        {/* Privacy Section */}
         <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
           <h3 className="text-xl font-bold flex items-center space-x-2">
             <Shield className="w-5 h-5" />
@@ -127,7 +130,6 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
           </div>
         </section>
 
-        {/* Notifications */}
         <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
           <h3 className="text-xl font-bold flex items-center space-x-2">
             <Bell className="w-5 h-5" />
@@ -147,29 +149,36 @@ export default function Settings({ profile, setProfile }: SettingsProps) {
           </div>
         </section>
 
-        {/* Danger Zone */}
-        <section className="bg-red-50 p-8 rounded-[32px] border border-red-100 space-y-6">
-          <h3 className="text-xl font-bold text-red-600 flex items-center space-x-2">
-            <Trash2 className="w-5 h-5" />
-            <span>Danger Zone</span>
-          </h3>
-          <button className="w-full py-4 border-2 border-red-600 text-red-600 rounded-2xl font-bold hover:bg-red-600 hover:text-white transition-all">
-            Delete All My Data
-          </button>
+        <section className="col-span-full bg-red-50 p-8 rounded-[32px] border border-red-100 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-red-600">Danger Zone</h3>
+              <p className="text-sm text-red-600/60">Irreversible actions for your account.</p>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.removeItem('auth_token');
+                window.location.reload();
+              }}
+              className="px-6 py-3 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all flex items-center space-x-2"
+            >
+              <Trash2 className="w-5 h-5" />
+              <span>Log Out</span>
+            </button>
+          </div>
         </section>
       </div>
 
-      {/* Status Toast */}
       <AnimatePresence>
         {success && (
           <motion.div 
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-8 right-8 bg-black text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center space-x-2 z-50"
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-8 right-8 bg-green-500 text-white px-6 py-3 rounded-2xl shadow-xl font-bold flex items-center space-x-2 z-50"
           >
-            <Check className="w-5 h-5 text-emerald-400" />
-            <span className="font-bold">Settings Updated</span>
+            <Check className="w-5 h-5" />
+            <span>Preferences Saved!</span>
           </motion.div>
         )}
       </AnimatePresence>

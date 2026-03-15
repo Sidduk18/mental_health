@@ -1,20 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, addDoc, query, where, orderBy, onSnapshot, Timestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { UserProfile, Appointment, Message } from '../types';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { 
   Calendar as CalendarIcon, 
   User, 
-  Video, 
   MessageCircle, 
   Clock, 
   CheckCircle, 
   Loader2, 
   X, 
   ChevronRight, 
-  Send,
-  AlertCircle
+  Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -40,47 +36,36 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
   const [newMessage, setNewMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const filteredTherapists = therapists.filter(t => t.role === profile.role);
-
-  const calculateCost = (mins: number) => {
-    if (mins === 30) return 499;
-    if (mins === 45) return 499 + 199;
-    if (mins === 60) return 499 + 199 + 199;
-    return 499;
+  const fetchAppointments = async () => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch('/api/appointments', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await response.json();
+    const filtered = data.filter((app: any) => {
+      const t = therapists.find(th => th.id === app.therapistId);
+      return t?.role === profile.role;
+    }).map((app: any) => ({ ...app, dateTime: new Date(app.dateTime) }));
+    setAppointments(filtered);
   };
 
-  const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM', '04:00 PM'];
-  const dates = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(new Date()), i + 1));
-
   useEffect(() => {
-    const q = query(
-      collection(db, 'appointments'),
-      where('userId', '==', profile.uid),
-      orderBy('dateTime', 'desc')
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allApps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
-      const filteredApps = allApps.filter(app => {
-        const therapist = therapists.find(t => t.id === app.therapistId);
-        return therapist?.role === profile.role;
-      });
-      setAppointments(filteredApps);
-    });
-    return () => unsubscribe();
-  }, [profile.uid, profile.role]);
+    fetchAppointments();
+  }, [profile.role]);
 
   useEffect(() => {
     if (activeChat) {
-      const q = query(
-        collection(db, 'messages'),
-        where('appointmentId', '==', activeChat.id),
-        where('userId', '==', profile.uid),
-        orderBy('timestamp', 'asc')
-      );
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        setChatMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
-      });
-      return () => unsubscribe();
+      const token = localStorage.getItem('auth_token');
+      const fetchMessages = async () => {
+        const response = await fetch(`/api/messages/${activeChat.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        setChatMessages(data);
+      };
+      fetchMessages();
+      const interval = setInterval(fetchMessages, 3000);
+      return () => clearInterval(interval);
     }
   }, [activeChat]);
 
@@ -92,6 +77,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
     if (!selectedTherapist || !selectedDate || !selectedTime) return;
     setIsBooking(true);
     try {
+      const token = localStorage.getItem('auth_token');
       const [time, period] = selectedTime.split(' ');
       const [hours, minutes] = time.split(':');
       const date = new Date(selectedDate);
@@ -101,17 +87,23 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
       date.setHours(h);
       date.setMinutes(parseInt(minutes));
 
-      await addDoc(collection(db, 'appointments'), {
-        userId: profile.uid,
-        therapistId: selectedTherapist.id,
-        dateTime: Timestamp.fromDate(date),
-        duration,
-        status: 'scheduled',
-        meetLink: `https://meet.google.com/${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`,
-        totalCost: calculateCost(duration)
+      await fetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          therapistId: selectedTherapist.id,
+          dateTime: date,
+          duration,
+          meetLink: `https://meet.google.com/${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`,
+          totalCost: calculateCost(duration)
+        })
       });
       setSelectedTherapist(null);
       setBookingStep('therapist');
+      fetchAppointments();
     } catch (error) {
       console.error('Error booking:', error);
     } finally {
@@ -122,15 +114,23 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
   const handleCancel = async (appId: string, cost: number) => {
     const reason = window.prompt('Please tell us why you are cancelling:');
     if (reason === null) return;
-
     const refundAmount = (cost * 0.75).toFixed(2);
     if (window.confirm(`Are you sure? You will receive a 75% refund (₹${refundAmount}).`)) {
       try {
-        await updateDoc(doc(db, 'appointments', appId), {
-          status: 'cancelled',
-          cancelReason: reason,
-          refundAmount: Number(refundAmount)
+        const token = localStorage.getItem('auth_token');
+        await fetch(`/api/appointments/${appId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            status: 'cancelled',
+            cancelReason: reason,
+            refundAmount: Number(refundAmount)
+          })
         });
+        fetchAppointments();
       } catch (error) {
         console.error('Error cancelling:', error);
       }
@@ -142,36 +142,33 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
     const msg = newMessage;
     setNewMessage('');
     try {
-      await addDoc(collection(db, 'messages'), {
-        appointmentId: activeChat.id,
-        userId: profile.uid,
-        senderId: profile.uid,
-        content: msg,
-        timestamp: Timestamp.now()
-      });
-
-      // Simulated therapist reply
-      setTimeout(async () => {
-        const replies = [
-          "I understand how you feel. We'll discuss this in our next session.",
-          "That's a very insightful observation.",
-          "Remember to practice your breathing exercises when you feel this way.",
-          "I'm here to support you. You're doing great.",
-          "Let's explore that thought further when we meet.",
-          "It's completely normal to feel that way given the circumstances."
-        ];
-        await addDoc(collection(db, 'messages'), {
+      const token = localStorage.getItem('auth_token');
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
           appointmentId: activeChat.id,
-          userId: profile.uid,
-          senderId: activeChat.therapistId,
-          content: replies[Math.floor(Math.random() * replies.length)],
-          timestamp: Timestamp.now()
-        });
-      }, 1500);
+          senderId: profile.uid,
+          content: msg
+        })
+      });
     } catch (error) {
       console.error('Error sending message:', error);
     }
   };
+
+  const filteredTherapists = therapists.filter(t => t.role === profile.role);
+  const calculateCost = (mins: number) => {
+    if (mins === 30) return 499;
+    if (mins === 45) return 499 + 199;
+    if (mins === 60) return 499 + 199 + 199;
+    return 499;
+  };
+  const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM', '04:00 PM'];
+  const dates = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(new Date()), i + 1));
 
   return (
     <div className="space-y-8 pb-20">
@@ -181,15 +178,14 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Your Sessions */}
         <section className="lg:col-span-1 space-y-6">
           <h3 className="text-xl font-bold flex items-center space-x-2">
             <Clock className="w-5 h-5" />
             <span>Your Sessions</span>
           </h3>
           <div className="space-y-4">
-            {appointments.length > 0 ? appointments.map((app) => (
-              <div key={app.id} className={`p-6 rounded-3xl border shadow-sm space-y-4 ${app.status === 'cancelled' ? 'bg-neutral-50 opacity-60' : 'bg-white border-black/10'}`}>
+            {appointments.length > 0 ? appointments.map((app: any) => (
+              <div key={app._id} className={`p-6 rounded-3xl border shadow-sm space-y-4 ${app.status === 'cancelled' ? 'bg-neutral-50 opacity-60' : 'bg-white border-black/10'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <img 
@@ -200,13 +196,13 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                     <div>
                       <h4 className="font-bold">{therapists.find(t => t.id === app.therapistId)?.name || 'Therapist'}</h4>
                       <p className="text-[10px] font-bold text-black/30 uppercase tracking-widest">
-                        {format(app.dateTime.toDate(), 'MMM d, h:mm a')}
+                        {format(app.dateTime, 'MMM d, h:mm a')}
                       </p>
                     </div>
                   </div>
                   {app.status === 'scheduled' && (
                     <button 
-                      onClick={() => handleCancel(app.id!, app.totalCost)}
+                      onClick={() => handleCancel(app._id, app.totalCost)}
                       className="p-2 hover:bg-red-50 rounded-xl transition-colors"
                       title="Cancel Session"
                     >
@@ -244,13 +240,11 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
           </div>
         </section>
 
-        {/* Booking Flow */}
         <section className="lg:col-span-2 space-y-6">
           <h3 className="text-xl font-bold flex items-center space-x-2">
             <CalendarIcon className="w-5 h-5" />
             <span>Book a New Session</span>
           </h3>
-          
           <div className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm min-h-[400px]">
             {bookingStep === 'therapist' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -270,7 +264,6 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                 ))}
               </div>
             )}
-
             {bookingStep === 'date' && selectedTherapist && (
               <div className="space-y-6">
                 <div className="flex items-center space-x-4 mb-8">
@@ -295,7 +288,6 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                 </div>
               </div>
             )}
-
             {bookingStep === 'time' && selectedTherapist && (
               <div className="space-y-6">
                 <div className="flex items-center space-x-4 mb-8">
@@ -319,14 +311,12 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                 </div>
               </div>
             )}
-
             {bookingStep === 'confirm' && selectedTherapist && (
               <div className="space-y-8">
                 <div className="flex items-center space-x-4">
                   <button onClick={() => setBookingStep('time')} className="p-2 hover:bg-black/5 rounded-full"><X className="w-5 h-5" /></button>
                   <h4 className="font-bold">Confirm Booking</h4>
                 </div>
-                
                 <div className="bg-neutral-50 p-6 rounded-3xl space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-bold opacity-50">Duration</span>
@@ -351,7 +341,6 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                     <span className="text-2xl font-black">₹{calculateCost(duration)}</span>
                   </div>
                 </div>
-
                 <button 
                   onClick={handleBook}
                   disabled={isBooking}
@@ -366,7 +355,6 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
         </section>
       </div>
 
-      {/* Chat Window Overlay */}
       <AnimatePresence>
         {activeChat && (
           <motion.div 
@@ -381,7 +369,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                   <User className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm">{therapists.find(t => t.id === activeChat.therapistId)?.name}</h4>
+                  <h4 className="font-bold text-sm">{therapists.find(t => t.id === (activeChat as any).therapistId)?.name}</h4>
                   <p className="text-[10px] opacity-50">Online</p>
                 </div>
               </div>
@@ -389,10 +377,9 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-
             <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-neutral-50">
-              {chatMessages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.senderId === profile.uid ? 'justify-end' : 'justify-start'}`}>
+              {chatMessages.map((msg: any) => (
+                <div key={msg._id} className={`flex ${msg.senderId === profile.uid ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] p-4 rounded-2xl text-sm shadow-sm ${
                     msg.senderId === profile.uid 
                       ? 'bg-black text-white rounded-tr-none' 
@@ -404,7 +391,6 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
               ))}
               <div ref={chatEndRef} />
             </div>
-
             <div className="p-4 border-t border-black/5 flex space-x-2 bg-white">
               <input 
                 type="text" 

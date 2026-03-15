@@ -1,12 +1,4 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
-import { auth, db } from './firebase';
 import { UserProfile, UserRole } from './types';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
@@ -19,12 +11,10 @@ import Settings from './components/Settings';
 import Exercises from './components/Exercises';
 import { Layout } from './components/Layout';
 import { Loader2 } from 'lucide-react';
-
 import PeerGroup from './components/PeerGroup';
-import { differenceInDays } from 'date-fns';
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState('dashboard');
@@ -38,12 +28,12 @@ export default function App() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/auth/me', {
+        const response = await fetch('/api/auth/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('Token invalid');
         const userData = await response.json();
-        setUser({ uid: userData.uid, email: userData.email } as any);
+        setUser({ uid: userData.uid, email: userData.email });
         setProfile(userData);
       } catch (err) {
         localStorage.removeItem('auth_token');
@@ -55,12 +45,12 @@ export default function App() {
     };
 
     checkAuth();
-  }, [loading]);
+  }, []);
 
   useEffect(() => {
     if (profile) {
       const isTeen = profile.role === 'teen';
-      const isDark = profile.preferences.theme === 'dark';
+      const isDark = profile.preferences?.theme === 'dark';
       
       document.documentElement.classList.remove('dark', 'teen-theme');
       if (isTeen) {
@@ -70,7 +60,7 @@ export default function App() {
         document.documentElement.classList.add('dark');
       }
     }
-  }, [profile?.role, profile?.preferences.theme]);
+  }, [profile?.role, profile?.preferences?.theme]);
 
   if (loading) {
     return (

@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, query, where, orderBy, onSnapshot, Timestamp, limit } from 'firebase/firestore';
-import { db } from '../firebase';
 import { UserProfile, MoodLog } from '../types';
 import { 
   LineChart, 
@@ -9,13 +7,10 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  AreaChart,
-  Area
+  ResponsiveContainer
 } from 'recharts';
 import { format } from 'date-fns';
 import { Smile, Meh, Frown, Send, Loader2 } from 'lucide-react';
-import { motion } from 'motion/react';
 
 interface MoodTrackerProps {
   profile: UserProfile;
@@ -35,33 +30,35 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const q = query(
-      collection(db, 'moods'),
-      where('userId', '==', profile.uid),
-      orderBy('timestamp', 'asc'),
-      limit(30)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setMoods(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MoodLog)));
+  const fetchMoods = async () => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch('/api/moods', {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
+    const data = await response.json();
+    setMoods(data.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
+  };
 
-    return () => unsubscribe();
-  }, [profile.uid]);
+  useEffect(() => {
+    fetchMoods();
+  }, []);
 
   const handleLogMood = async () => {
     if (selectedMood === null) return;
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, 'moods'), {
-        userId: profile.uid,
-        mood: selectedMood,
-        note,
-        timestamp: Timestamp.now()
+      const token = localStorage.getItem('auth_token');
+      await fetch('/api/moods', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ mood: selectedMood, note })
       });
       setSelectedMood(null);
       setNote('');
+      fetchMoods();
     } catch (error) {
       console.error('Error logging mood:', error);
     } finally {
@@ -69,18 +66,16 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
     }
   };
 
-  const chartData = moods
-    .filter(m => m.timestamp)
-    .map(m => {
-      const moodValue = Number(m.mood);
-      return {
-        date: format(m.timestamp.toDate(), 'MMM d'),
-        time: format(m.timestamp.toDate(), 'h:mm a'),
-        mood: moodValue,
-        fullDate: format(m.timestamp.toDate(), 'MMM d, h:mm a'),
-        label: moodOptions.find(o => o.value === moodValue)?.label || 'Unknown'
-      };
-    });
+  const chartData = moods.map(m => {
+    const moodValue = Number(m.mood);
+    return {
+      date: format(m.timestamp, 'MMM d'),
+      time: format(m.timestamp, 'h:mm a'),
+      mood: moodValue,
+      fullDate: format(m.timestamp, 'MMM d, h:mm a'),
+      label: moodOptions.find(o => o.value === moodValue)?.label || 'Unknown'
+    };
+  });
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -104,7 +99,6 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Log Mood Section */}
         <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-6">
           <h3 className="text-xl font-bold">How are you right now?</h3>
           <div className="flex justify-between items-center">
@@ -141,19 +135,13 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
           </button>
         </section>
 
-        {/* Chart Section */}
         <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm h-[400px]">
           <h3 className="text-xl font-bold mb-6">Mood Trends</h3>
           <div className="h-full pb-10">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
-                <XAxis 
-                  dataKey="fullDate" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={false}
-                />
+                <XAxis dataKey="fullDate" axisLine={false} tickLine={false} tick={false} />
                 <YAxis 
                   domain={[1, 5]} 
                   ticks={[1, 2, 3, 4, 5]} 
@@ -182,7 +170,6 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
         </section>
       </div>
 
-      {/* History List */}
       <section className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm">
         <h3 className="text-xl font-bold mb-6">Mood History</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -190,14 +177,14 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
             const option = moodOptions.find(o => o.value === m.mood);
             const Icon = option?.icon;
             return (
-              <div key={m.id} className="p-4 bg-neutral-50 rounded-2xl space-y-2">
+              <div key={m._id} className="p-4 bg-neutral-50 rounded-2xl space-y-2">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
                     {Icon && <Icon className={`w-5 h-5 ${option?.color}`} />}
                     <span className="font-bold">{option?.label}</span>
                   </div>
                   <span className="text-xs font-bold opacity-30">
-                    {m.timestamp ? format(m.timestamp.toDate(), 'MMM d, h:mm a') : 'Just now'}
+                    {format(m.timestamp, 'MMM d, h:mm a')}
                   </span>
                 </div>
                 {m.note && <p className="text-sm text-black/60 italic">"{m.note}"</p>}

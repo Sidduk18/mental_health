@@ -1,195 +1,149 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, query, orderBy, onSnapshot, Timestamp, updateDoc, doc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { db } from '../firebase';
-import { UserProfile, PeerPost } from '../types';
-import { MessageSquare, Heart, Share2, Send, User, Loader2 } from 'lucide-react';
+import { UserProfile, PeerGroup } from '../types';
+import { Users, Search, MessageSquare, ChevronRight, Loader2, Sparkles, Shield, Wind } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { format } from 'date-fns';
 
-export default function PeerGroup({ profile }: { profile: UserProfile }) {
-  const [posts, setPosts] = useState<PeerPost[]>([]);
-  const [newPost, setNewPost] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [commentingOn, setCommentingOn] = useState<string | null>(null);
-  const [commentText, setCommentText] = useState('');
+export default function PeerGroupComponent({ profile }: { profile: UserProfile }) {
+  const [groups, setGroups] = useState<PeerGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [joiningId, setJoiningId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const q = query(collection(db, 'peer_posts'), orderBy('timestamp', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setPosts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PeerPost)));
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleCreatePost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPost.trim()) return;
-    setIsSubmitting(true);
+  const fetchGroups = async () => {
+    const token = localStorage.getItem('auth_token');
     try {
-      await addDoc(collection(db, 'peer_posts'), {
-        userId: profile.uid,
-        userName: profile.anonymous ? 'Anonymous' : (profile.displayName || 'User'),
-        content: newPost,
-        likes: [],
-        comments: [],
-        timestamp: Timestamp.now(),
-        anonymous: profile.anonymous
+      const response = await fetch('/api/peergroups', {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      setNewPost('');
-    } catch (error) {
-      console.error('Error creating post:', error);
+      const data = await response.json();
+      setGroups(data);
+    } catch (err) {
+      console.error('Error fetching groups:', err);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const handleLike = async (postId: string, isLiked: boolean) => {
-    const postRef = doc(db, 'peer_posts', postId);
-    await updateDoc(postRef, {
-      likes: isLiked ? arrayRemove(profile.uid) : arrayUnion(profile.uid)
-    });
+  useEffect(() => {
+    fetchGroups();
+  }, []);
+
+  const handleJoinLeave = async (group: PeerGroup) => {
+    setJoiningId(group.id || (group as any)._id);
+    const token = localStorage.getItem('auth_token');
+    const isMember = group.members.includes(profile.uid);
+    const action = isMember ? 'leave' : 'join';
+    const groupId = group.id || (group as any)._id;
+
+    try {
+      await fetch(`/api/peergroups/${groupId}/${action}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchGroups();
+    } catch (err) {
+      console.error('Error joining/leaving group:', err);
+    } finally {
+      setJoiningId(null);
+    }
   };
 
-  const handleAddComment = async (postId: string) => {
-    if (!commentText.trim()) return;
-    const postRef = doc(db, 'peer_posts', postId);
-    await updateDoc(postRef, {
-      comments: arrayUnion({
-        userId: profile.uid,
-        userName: profile.anonymous ? 'Anonymous' : (profile.displayName || 'User'),
-        content: commentText,
-        timestamp: Timestamp.now()
-      })
-    });
-    setCommentText('');
-    setCommentingOn(null);
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'wind': return <Wind className="w-6 h-6" />;
+      case 'shield': return <Shield className="w-6 h-6" />;
+      case 'sparkles': return <Sparkles className="w-6 h-6" />;
+      default: return <MessageSquare className="w-6 h-6" />;
+    }
   };
+
+  const filteredGroups = groups.filter(g =>
+    g.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    g.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-black/20" />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-20">
-      <header>
-        <h2 className="text-3xl font-black tracking-tight">Peer Support Group</h2>
-        <p className="text-black/50">Connect with others in a safe, anonymous-friendly space.</p>
+    <div className="space-y-8 pb-20">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black tracking-tight">Peer Support Groups</h2>
+          <p className="text-black/50">Connect with others on similar journeys.</p>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30" />
+          <input
+            type="text"
+            placeholder="Search groups..."
+            className="pl-12 pr-6 py-3 bg-white border border-black/10 rounded-2xl focus:ring-2 focus:ring-black outline-none transition-all w-full md:w-64"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </header>
 
-      {/* Create Post */}
-      <section className="bg-white p-6 rounded-[32px] border border-black/10 shadow-sm">
-        <form onSubmit={handleCreatePost} className="space-y-4">
-          <textarea
-            placeholder="What's on your mind? Share with the community..."
-            className="w-full p-4 bg-neutral-50 border border-black/5 rounded-2xl focus:ring-2 focus:ring-black outline-none min-h-[120px] resize-none"
-            value={newPost}
-            onChange={(e) => setNewPost(e.target.value)}
-          />
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2 text-xs font-bold text-black/40">
-              <User className="w-4 h-4" />
-              <span>Posting as {profile.anonymous ? 'Anonymous' : (profile.displayName || 'User')}</span>
-            </div>
-            <button
-              type="submit"
-              disabled={!newPost.trim() || isSubmitting}
-              className="bg-black text-white px-6 py-2 rounded-xl font-bold flex items-center space-x-2 disabled:opacity-50"
-            >
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              <span>Post</span>
-            </button>
-          </div>
-        </form>
-      </section>
-
-      {/* Posts Feed */}
-      <div className="space-y-6">
-        {posts.map((post) => {
-          const isLiked = post.likes.includes(profile.uid);
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredGroups.map((group: any) => {
+          const isMember = group.members.includes(profile.uid);
+          const groupId = group._id;
           return (
-            <motion.article 
-              key={post.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm space-y-4"
+            <motion.div
+              key={groupId}
+              layout
+              className="bg-white p-8 rounded-[32px] border border-black/10 shadow-sm hover:shadow-md transition-all flex flex-col h-full"
             >
-              <div className="flex justify-between items-start">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-black/20" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold">{post.userName}</h4>
-                    <p className="text-[10px] font-bold text-black/30 uppercase tracking-widest">
-                      {post.timestamp ? format(post.timestamp.toDate(), 'MMM d, h:mm a') : 'Just now'}
-                    </p>
-                  </div>
+              <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center mb-6">
+                {getIcon(group.icon)}
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <h3 className="text-xl font-bold">{group.name}</h3>
+                <p className="text-sm text-black/50 leading-relaxed">{group.description}</p>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-black/5 flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-black/30 font-bold text-xs uppercase tracking-widest">
+                  <Users className="w-4 h-4" />
+                  <span>{group.memberCount} members</span>
                 </div>
-              </div>
-
-              <p className="text-lg leading-relaxed">{post.content}</p>
-
-              <div className="flex items-center space-x-6 pt-4 border-t border-black/5">
                 <button 
-                  onClick={() => handleLike(post.id, isLiked)}
-                  className={`flex items-center space-x-2 transition-colors ${isLiked ? 'text-rose-500' : 'text-black/40 hover:text-black'}`}
+                  onClick={() => handleJoinLeave(group)}
+                  disabled={joiningId === groupId}
+                  className={`px-6 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
+                    isMember
+                      ? 'bg-neutral-100 text-black hover:bg-red-50 hover:text-red-500'
+                      : 'bg-black text-white hover:shadow-lg active:scale-95'
+                  }`}
                 >
-                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                  <span className="text-sm font-bold">{post.likes.length}</span>
-                </button>
-                <button 
-                  onClick={() => setCommentingOn(commentingOn === post.id ? null : post.id)}
-                  className="flex items-center space-x-2 text-black/40 hover:text-black transition-colors"
-                >
-                  <MessageSquare className="w-5 h-5" />
-                  <span className="text-sm font-bold">{post.comments.length}</span>
-                </button>
-                <button className="flex items-center space-x-2 text-black/40 hover:text-black transition-colors">
-                  <Share2 className="w-5 h-5" />
+                  {joiningId === groupId ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : isMember ? (
+                    'Leave Group'
+                  ) : (
+                    <>
+                      <span>Join</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </>
+                  )}
                 </button>
               </div>
-
-              {/* Comments Section */}
-              <AnimatePresence>
-                {commentingOn === post.id && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden pt-4 space-y-4"
-                  >
-                    <div className="space-y-3">
-                      {post.comments.map((comment, i) => (
-                        <div key={i} className="bg-neutral-50 p-4 rounded-2xl space-y-1">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold">{comment.userName}</span>
-                            <span className="text-[10px] font-bold text-black/20">
-                              {comment.timestamp ? format(comment.timestamp.toDate(), 'h:mm a') : 'Just now'}
-                            </span>
-                          </div>
-                          <p className="text-sm">{comment.content}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex space-x-2">
-                      <input
-                        type="text"
-                        placeholder="Add a comment..."
-                        className="flex-1 bg-neutral-50 border border-black/5 rounded-xl px-4 py-2 text-sm outline-none focus:border-black"
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
-                      />
-                      <button 
-                        onClick={() => handleAddComment(post.id)}
-                        className="bg-black text-white p-2 rounded-xl"
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.article>
+            </motion.div>
           );
         })}
       </div>
+
+      {filteredGroups.length === 0 && (
+        <div className="text-center py-20 bg-white rounded-[40px] border border-dashed border-black/10">
+          <p className="text-black/30 italic">No groups found matching your search.</p>
+        </div>
+      )}
     </div>
   );
 }

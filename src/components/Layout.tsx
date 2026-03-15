@@ -11,7 +11,6 @@ import {
   Wind,
   Users
 } from 'lucide-react';
-import { auth } from '../firebase';
 import { UserProfile } from '../types';
 import { cn } from '../lib/utils';
 
@@ -35,9 +34,13 @@ export function Layout({ children, currentView, setView, profile }: LayoutProps)
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
+  const handleSignOut = () => {
+    localStorage.removeItem('auth_token');
+    window.location.reload();
+  };
+
   return (
     <div className="flex min-h-screen font-sans">
-      {/* Sidebar */}
       <aside className="w-64 border-r border-black/10 flex flex-col fixed h-full bg-white dark:bg-black">
         <div className="p-6 border-b border-black/10">
           <h1 className="text-2xl font-bold tracking-tighter text-black dark:text-white">MindAnchor</h1>
@@ -67,7 +70,7 @@ export function Layout({ children, currentView, setView, profile }: LayoutProps)
 
         <div className="p-4 border-t border-black/10">
           <button 
-            onClick={() => auth.signOut()}
+            onClick={handleSignOut}
             className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors"
           >
             <LogOut className="w-5 h-5" />
@@ -76,7 +79,6 @@ export function Layout({ children, currentView, setView, profile }: LayoutProps)
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 ml-64 p-8 min-h-screen bg-neutral-50">
         <div className="max-w-5xl mx-auto">
           {children}

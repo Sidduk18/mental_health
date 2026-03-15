@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase';
 import { UserProfile } from '../types';
 import { ClipboardCheck, ArrowRight, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,7 +42,6 @@ export default function Assessments({ profile }: { profile: UserProfile }) {
   const handleAnswer = (value: number) => {
     const newAnswers = [...answers, value];
     setAnswers(newAnswers);
-    
     const questions = activeTest === 'PHQ-9' ? phq9Questions : gad7Questions;
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
@@ -57,11 +54,14 @@ export default function Assessments({ profile }: { profile: UserProfile }) {
     setIsSubmitting(true);
     const score = finalAnswers.reduce((a, b) => a + b, 0);
     try {
-      await addDoc(collection(db, 'assessments'), {
-        userId: profile.uid,
-        type: activeTest,
-        score,
-        timestamp: Timestamp.now()
+      const token = localStorage.getItem('auth_token');
+      await fetch('/api/assessments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ type: activeTest, score })
       });
       setResult(score);
     } catch (error) {
