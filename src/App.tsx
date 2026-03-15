@@ -12,6 +12,7 @@ import Exercises from './components/Exercises';
 import { Layout } from './components/Layout';
 import { Loader2 } from 'lucide-react';
 import PeerGroup from './components/PeerGroup';
+import getApiUrl from './lib/api';
 
 export default function App() {
   const [user, setUser] = useState<any | null>(null);
@@ -28,7 +29,7 @@ export default function App() {
       }
 
       try {
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch(getApiUrl('/api/auth/me'), {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('Token invalid');

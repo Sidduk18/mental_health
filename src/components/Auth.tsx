@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, ShieldCheck, Loader2, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import getApiUrl from '../lib/api';
 
 interface AuthProps {
   onAuthSuccess: () => void;
@@ -20,7 +21,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
     setLoading(true);
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
-      const response = await fetch(endpoint, {
+      const response = await fetch(getApiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

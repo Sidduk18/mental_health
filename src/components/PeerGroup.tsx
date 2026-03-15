@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, PeerGroup } from '../types';
 import { Users, Search, MessageSquare, ChevronRight, Loader2, Sparkles, Shield, Wind } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import getApiUrl from '../lib/api';
 
 export default function PeerGroupComponent({ profile }: { profile: UserProfile }) {
   const [groups, setGroups] = useState<PeerGroup[]>([]);
@@ -12,7 +13,7 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
   const fetchGroups = async () => {
     const token = localStorage.getItem('auth_token');
     try {
-      const response = await fetch('/api/peergroups', {
+      const response = await fetch(getApiUrl('/api/peergroups'), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -36,7 +37,7 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
     const groupId = group.id || (group as any)._id;
 
     try {
-      await fetch(`/api/peergroups/${groupId}/${action}`, {
+      await fetch(getApiUrl(`/api/peergroups/${groupId}/${action}`), {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });

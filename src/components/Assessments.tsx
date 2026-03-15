@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { ClipboardCheck, ArrowRight, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import getApiUrl from '../lib/api';
 
 export default function Assessments({ profile }: { profile: UserProfile }) {
   const [activeTest, setActiveTest] = useState<'PHQ-9' | 'GAD-7' | null>(null);
@@ -55,7 +56,7 @@ export default function Assessments({ profile }: { profile: UserProfile }) {
     const score = finalAnswers.reduce((a, b) => a + b, 0);
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch('/api/assessments', {
+      await fetch(getApiUrl('/api/assessments'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

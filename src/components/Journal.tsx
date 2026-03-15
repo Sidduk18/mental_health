@@ -3,6 +3,7 @@ import { UserProfile, JournalEntry } from '../types';
 import { format } from 'date-fns';
 import { PenLine, Mic, History, Sparkles, Loader2, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import getApiUrl from '../lib/api';
 
 export default function Journal({ profile }: { profile: UserProfile }) {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -34,7 +35,7 @@ export default function Journal({ profile }: { profile: UserProfile }) {
   const fetchJournals = async () => {
     const token = localStorage.getItem('auth_token');
     try {
-      const response = await fetch('/api/journals', {
+      const response = await fetch(getApiUrl('/api/journals'), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -53,7 +54,7 @@ export default function Journal({ profile }: { profile: UserProfile }) {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch('/api/journals', {
+      await fetch(getApiUrl('/api/journals'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -21,6 +21,7 @@ export interface UserProfile {
 
 export interface MoodLog {
   id?: string;
+  _id?: string;
   userId: string;
   mood: number; // 1-5
   note?: string;

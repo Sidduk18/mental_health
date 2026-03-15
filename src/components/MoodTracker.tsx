@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import { Smile, Meh, Frown, Send, Loader2 } from 'lucide-react';
+import getApiUrl from '../lib/api';
 
 interface MoodTrackerProps {
   profile: UserProfile;
@@ -32,7 +33,7 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
 
   const fetchMoods = async () => {
     const token = localStorage.getItem('auth_token');
-    const response = await fetch('/api/moods', {
+    const response = await fetch(getApiUrl('/api/moods'), {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await response.json();
@@ -48,7 +49,7 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch('/api/moods', {
+      await fetch(getApiUrl('/api/moods'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

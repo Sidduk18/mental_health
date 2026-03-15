@@ -13,6 +13,7 @@ import {
   Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import getApiUrl from '../lib/api';
 
 const therapists = [
   { id: 't1', name: 'Dr. Sarah Chen', specialty: 'Anxiety & Stress', image: 'https://picsum.photos/seed/sarah/100/100', role: 'adult', bio: 'Specializing in cognitive behavioral therapy for over 10 years.' },
@@ -38,7 +39,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
 
   const fetchAppointments = async () => {
     const token = localStorage.getItem('auth_token');
-    const response = await fetch('/api/appointments', {
+    const response = await fetch(getApiUrl('/api/appointments'), {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await response.json();
@@ -57,7 +58,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
     if (activeChat) {
       const token = localStorage.getItem('auth_token');
       const fetchMessages = async () => {
-        const response = await fetch(`/api/messages/${activeChat.id}`, {
+        const response = await fetch(getApiUrl(`/api/messages/${activeChat.id}`), {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -87,7 +88,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
       date.setHours(h);
       date.setMinutes(parseInt(minutes));
 
-      await fetch('/api/appointments', {
+      await fetch(getApiUrl('/api/appointments'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +119,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
     if (window.confirm(`Are you sure? You will receive a 75% refund (₹${refundAmount}).`)) {
       try {
         const token = localStorage.getItem('auth_token');
-        await fetch(`/api/appointments/${appId}`, {
+        await fetch(getApiUrl(`/api/appointments/${appId}`), {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -143,7 +144,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
     setNewMessage('');
     try {
       const token = localStorage.getItem('auth_token');
-      await fetch('/api/messages', {
+      await fetch(getApiUrl('/api/messages'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
