@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { Users, Search, MessageSquare, ChevronRight, Loader2, Sparkles, Shield, Wind, ArrowLeft, Send, MessageCircle, User, ArrowBigUp, ArrowBigDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import getApiUrl from '../lib/api';
+import { cn } from '../lib/utils';
 
 export default function PeerGroupComponent({ profile }: { profile: UserProfile }) {
   const [groups, setGroups] = useState<PeerGroup[]>([]);

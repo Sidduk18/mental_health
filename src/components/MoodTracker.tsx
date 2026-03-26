@@ -9,8 +9,8 @@ import {
   Tooltip, 
   ResponsiveContainer
 } from 'recharts';
-import { format } from 'date-fns';
-import { Smile, Meh, Frown, Send, Loader2 } from 'lucide-react';
+import { format, isSameDay, addDays, subDays, startOfDay } from 'date-fns';
+import { Smile, Meh, Frown, Send, Loader2, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import getApiUrl from '../lib/api';
 
 interface MoodTrackerProps {
@@ -30,6 +30,7 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [viewDate, setViewDate] = useState(startOfDay(new Date()));
 
   const fetchMoods = async () => {
     const token = localStorage.getItem('auth_token');
@@ -67,7 +68,9 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
     }
   };
 
-  const chartData = moods.map(m => {
+  const filteredMoods = moods.filter(m => isSameDay(m.timestamp, viewDate));
+
+  const chartData = filteredMoods.map(m => {
     const moodValue = Number(m.mood);
     return {
       date: format(m.timestamp, 'MMM d'),
@@ -137,7 +140,23 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
         </section>
 
         <section className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm">
-          <h3 className="text-lg md:text-xl font-bold mb-6 text-black dark:text-white">Mood Trends</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg md:text-xl font-bold text-black dark:text-white">Daily Trends</h3>
+            <div className="flex items-center space-x-2 bg-neutral-50 dark:bg-white/5 p-1 rounded-xl border border-black/5">
+              <button onClick={() => setViewDate(subDays(viewDate, 1))} className="p-1 hover:bg-black/5 rounded-lg"><ChevronLeft className="w-4 h-4" /></button>
+              <div className="flex items-center space-x-1 px-2">
+                <Calendar className="w-3 h-3 opacity-30" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">{isSameDay(viewDate, new Date()) ? 'Today' : format(viewDate, 'MMM d')}</span>
+              </div>
+              <button
+                onClick={() => setViewDate(addDays(viewDate, 1))}
+                disabled={isSameDay(viewDate, new Date())}
+                className="p-1 hover:bg-black/5 rounded-lg disabled:opacity-20"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
           <div className="w-full h-[250px] md:h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
@@ -172,9 +191,9 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
       </div>
 
       <section className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm">
-        <h3 className="text-lg md:text-xl font-bold mb-6 text-black dark:text-white">Mood History</h3>
+        <h3 className="text-lg md:text-xl font-bold mb-6 text-black dark:text-white">History for {format(viewDate, 'MMMM d, yyyy')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {moods.slice().reverse().map((m) => {
+          {filteredMoods.slice().reverse().map((m) => {
             const option = moodOptions.find(o => o.value === m.mood);
             const Icon = option?.icon;
             return (

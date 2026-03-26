@@ -11,6 +11,7 @@ interface AuthProps {
 export default function Auth({ onAuthSuccess }: AuthProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [authMethod, setAuthMethod] = useState<'email' | null>(null);
   const [error, setError] = useState('');
@@ -22,10 +23,11 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
     setLoading(true);
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
+      const body = isLogin ? { email, password } : { email, password, displayName };
       const response = await fetch(getApiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify(body)
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Auth failed');
@@ -84,6 +86,16 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
               </button>
               
               <form onSubmit={handleEmailAuth} className="space-y-4">
+                {!isLogin && (
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-4 py-4 border border-black/10 dark:border-white/10 rounded-2xl focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all bg-transparent text-black dark:text-white"
+                    placeholder="Full Name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                  />
+                )}
                 <input
                   type="email"
                   required
