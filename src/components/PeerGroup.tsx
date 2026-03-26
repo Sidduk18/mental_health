@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, PeerGroup } from '../types';
 import { format } from 'date-fns';
-import { Users, Search, MessageSquare, ChevronRight, Loader2, Sparkles, Shield, Wind, ArrowLeft, Send, MessageCircle } from 'lucide-react';
+import { Users, Search, MessageSquare, ChevronRight, Loader2, Sparkles, Shield, Wind, ArrowLeft, Send, MessageCircle, User, ArrowBigUp, ArrowBigDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import getApiUrl from '../lib/api';
 
@@ -101,6 +101,23 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
     }
   };
 
+  const handleVote = async (postId: string, type: 'up' | 'down') => {
+    const token = localStorage.getItem('auth_token');
+    try {
+      await fetch(getApiUrl(`/api/peergroups/posts/${postId}/vote`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ type })
+      });
+      fetchPosts(activeGroup._id || activeGroup.id);
+    } catch (error) {
+      console.error('Error voting:', error);
+    }
+  };
+
   const handleAddComment = async (postId: string) => {
     if (!commentText.trim()) return;
     const token = localStorage.getItem('auth_token');
@@ -186,34 +203,56 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
           {loadingPosts ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
           ) : posts.length > 0 ? (
-            posts.map(post => (
-              <div key={post._id} className="bg-white dark:bg-black/20 p-4 md:p-6 rounded-[24px] border border-black/5 dark:border-white/5 shadow-sm space-y-4">
-                {/* Main Post Content */}
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-neutral-100 dark:bg-white/10 rounded-full flex items-center justify-center shrink-0">
-                    <User className="w-5 h-5 text-black/40 dark:text-white/40" />
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div>
-                      <h4 className="font-bold text-sm text-black dark:text-white">{post.authorName}</h4>
-                      <p className="text-[10px] text-black/40 dark:text-white/40 font-bold uppercase tracking-widest">
-                        {format(new Date(post.timestamp), 'MMM d, h:mm a')}
-                      </p>
-                    </div>
-                    <p className="text-black/80 dark:text-white/80 leading-relaxed whitespace-pre-wrap text-sm md:text-base">{post.content}</p>
-                    
-                    <button 
-                      onClick={() => setReplyingTo(replyingTo === post._id ? null : post._id)}
-                      className="text-xs font-bold text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white flex items-center space-x-1 pt-2 transition-colors"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>{post.comments?.length || 0} Comments</span>
-                    </button>
-                  </div>
+            posts.map(post => {
+              const hasUpvoted = post.upvotes?.includes(profile.uid);
+              const hasDownvoted = post.downvotes?.includes(profile.uid);
+
+              return (
+              <div key={post._id} className="bg-white dark:bg-black/20 p-4 md:p-6 rounded-[24px] border border-black/5 dark:border-white/5 shadow-sm flex space-x-4">
+                {/* Voting Sidebar (Reddit style) */}
+                <div className="flex flex-col items-center space-y-1">
+                  <button
+                    onClick={() => handleVote(post._id, 'up')}
+                    className={cn("p-1 rounded hover:bg-black/5 dark:hover:bg-white/5 transition-colors", hasUpvoted && "text-orange-600")}
+                  >
+                    <ArrowBigUp className={cn("w-6 h-6", hasUpvoted && "fill-current")} />
+                  </button>
+                  <span className="text-xs font-black">{post.score || 0}</span>
+                  <button
+                    onClick={() => handleVote(post._id, 'down')}
+                    className={cn("p-1 rounded hover:bg-black/5 dark:hover:bg-white/5 transition-colors", hasDownvoted && "text-indigo-600")}
+                  >
+                    <ArrowBigDown className={cn("w-6 h-6", hasDownvoted && "fill-current")} />
+                  </button>
                 </div>
 
-                {/* Comments Section */}
-                <div className="pl-6 md:pl-13 space-y-3 pt-2">
+                <div className="flex-1 space-y-4">
+                  {/* Main Post Content */}
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 bg-neutral-100 dark:bg-white/10 rounded-full flex items-center justify-center shrink-0">
+                      <User className="w-5 h-5 text-black/40 dark:text-white/40" />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-black dark:text-white">{post.authorName}</h4>
+                        <p className="text-[10px] text-black/40 dark:text-white/40 font-bold uppercase tracking-widest">
+                          {format(new Date(post.timestamp), 'MMM d, h:mm a')}
+                        </p>
+                      </div>
+                      <p className="text-black/80 dark:text-white/80 leading-relaxed whitespace-pre-wrap text-sm md:text-base">{post.content}</p>
+
+                      <button
+                        onClick={() => setReplyingTo(replyingTo === post._id ? null : post._id)}
+                        className="text-xs font-bold text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white flex items-center space-x-1 pt-2 transition-colors"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        <span>{post.comments?.length || 0} Comments</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Comments Section */}
+                  <div className="pl-6 md:pl-13 space-y-3 pt-2 border-t border-black/5 dark:border-white/5 mt-4">
                   {post.comments?.map((comment: any, idx: number) => (
                     <div key={idx} className="flex items-start space-x-3 bg-neutral-50 dark:bg-white/5 p-3 md:p-4 rounded-2xl">
                        <div className="w-8 h-8 bg-white dark:bg-black/20 rounded-full flex items-center justify-center shrink-0 border border-black/5 dark:border-white/5">
@@ -261,9 +300,10 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
                       </motion.div>
                     )}
                   </AnimatePresence>
+                  </div>
                 </div>
               </div>
-            ))
+            )})
           ) : (
             <div className="text-center py-20 text-black/40 italic">
               Be the first to post in this group!

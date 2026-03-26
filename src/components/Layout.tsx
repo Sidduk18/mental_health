@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { cn } from '../lib/utils';
+import logo from '../assets/logo.jpg';
 
 interface LayoutProps {
   children: ReactNode;
@@ -39,17 +40,20 @@ export function Layout({ children, currentView, setView, profile }: LayoutProps)
     window.location.reload();
   };
 
-  const mobileNavItems = navItems.slice(0, 5); // Just first 5 for bottom nav
+  const mobileNavItems = navItems.filter(item => ['dashboard', 'mood', 'journal', 'peer', 'therapy'].includes(item.id));
 
   return (
     <div className="flex min-h-screen font-sans bg-neutral-50 dark:bg-[#111111]">
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex w-64 border-r border-black/10 flex-col fixed h-full bg-white dark:bg-black">
-        <div className="p-6 border-b border-black/10">
-          <h1 className="text-2xl font-bold tracking-tighter text-black dark:text-white">MindAnchor</h1>
-          <p className="text-xs text-black/50 dark:text-white/50 uppercase tracking-widest mt-1">
-            {profile.role} Edition
-          </p>
+        <div className="p-6 border-b border-black/10 flex items-center space-x-3">
+          <img src={logo} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tighter text-black dark:text-white">Sthira</h1>
+            <p className="text-[10px] text-black/50 dark:text-white/50 uppercase tracking-widest leading-none">
+              {profile.role} Edition
+            </p>
+          </div>
         </div>
         
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -84,7 +88,10 @@ export function Layout({ children, currentView, setView, profile }: LayoutProps)
 
       {/* Mobile Top Bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-black/5 dark:border-white/5 z-50 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tighter text-black dark:text-white">MindAnchor</h1>
+        <div className="flex items-center space-x-2">
+          <img src={logo} alt="Logo" className="w-6 h-6 rounded-md object-cover" />
+          <h1 className="text-xl font-bold tracking-tighter text-black dark:text-white">Sthira</h1>
+        </div>
         <button
           onClick={() => setView('settings')}
           className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center"

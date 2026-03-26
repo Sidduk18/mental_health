@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, ShieldCheck, Loader2, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import getApiUrl from '../lib/api';
+import logo from '../assets/logo.jpg';
 
 interface AuthProps {
   onAuthSuccess: () => void;
@@ -46,8 +47,11 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
         className="max-w-md w-full space-y-8 bg-white dark:bg-black/40 border border-black/10 dark:border-white/10 p-8 md:p-10 rounded-[32px] md:rounded-[40px] shadow-2xl backdrop-blur-xl"
       >
         <div className="text-center">
-          <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-black dark:text-white">MindAnchor</h2>
-          <p className="mt-2 text-sm text-black/50 dark:text-white/50">Your safe space for mental well-being.</p>
+          <div className="flex justify-center mb-6">
+            <img src={logo} alt="Sthira Logo" className="w-20 h-20 rounded-2xl shadow-lg object-cover border border-black/5" />
+          </div>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tighter text-black dark:text-white">Sthira</h2>
+          <p className="mt-2 text-sm text-black/50 dark:text-white/50 font-medium italic">One tap closer to feeling better</p>
         </div>
 
         <AnimatePresence mode="wait">
