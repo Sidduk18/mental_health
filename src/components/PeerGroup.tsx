@@ -64,10 +64,16 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
     const action = isMember ? 'leave' : 'join';
 
     try {
-      await fetch(getApiUrl(`/api/peergroups/${groupId}/${action}`), {
+      const response = await fetch(getApiUrl(`/api/peergroups/${groupId}/${action}`), {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      const updatedGroup = await response.json();
+
+      if (activeGroup && (activeGroup._id === groupId || activeGroup.id === groupId)) {
+        setActiveGroup(updatedGroup);
+      }
+
       fetchGroups();
     } catch (err) {
       console.error('Error joining/leaving group:', err);
