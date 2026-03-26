@@ -72,12 +72,13 @@ export default function MoodTracker({ profile }: MoodTrackerProps) {
 
   const chartData = filteredMoods.map(m => {
     const moodValue = Number(m.mood);
+    const option = moodOptions.find(o => o.value === moodValue);
     return {
       date: format(m.timestamp, 'MMM d'),
       time: format(m.timestamp, 'h:mm a'),
       mood: moodValue,
       fullDate: format(m.timestamp, 'MMM d, h:mm a'),
-      label: moodOptions.find(o => o.value === moodValue)?.label || 'Unknown'
+      label: option ? option.label : 'Unknown'
     };
   });
 
