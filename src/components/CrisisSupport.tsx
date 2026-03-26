@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Phone, MessageSquare, Heart, Shield, MapPin } from 'lucide-react';
 import { motion } from 'motion/react';
+import MapComponent from './Map';
 
 export default function CrisisSupport({ profile }: { profile: any }) {
   const [sosActive, setSosActive] = useState(false);
@@ -70,13 +71,14 @@ export default function CrisisSupport({ profile }: { profile: any }) {
       </div>
 
       <section className="bg-white dark:bg-black/20 p-6 md:p-8 rounded-[32px] md:rounded-[40px] border border-black/10 dark:border-white/10 space-y-6">
-        <h3 className="text-xl md:text-2xl font-bold flex items-center space-x-3 text-black dark:text-white">
-          <MapPin className="w-6 h-6" />
-          <span>Nearby Crisis Centers</span>
-        </h3>
-        <div className="aspect-video bg-neutral-100 dark:bg-white/5 rounded-3xl flex items-center justify-center text-black/30 dark:text-white/30 italic text-sm md:text-base">
-          Map integration would load here...
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <h3 className="text-xl md:text-2xl font-bold flex items-center space-x-3 text-black dark:text-white">
+            <MapPin className="w-6 h-6 text-emerald-500" />
+            <span>Find Help Nearby</span>
+          </h3>
+          <p className="text-[10px] md:text-xs text-black/40 dark:text-white/40 font-bold uppercase tracking-widest leading-none">Showing Wellness Centers Near You</p>
         </div>
+        <MapComponent />
       </section>
     </div>
   );

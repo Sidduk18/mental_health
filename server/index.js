@@ -31,6 +31,7 @@ mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('MongoDB connected');
     initGroups();
+    initCenters();
   })
   .catch(err => {
     console.error('MongoDB connection error:', err);
@@ -129,6 +130,16 @@ const assessmentSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 });
 const Assessment = mongoose.model('Assessment', assessmentSchema);
+
+const supportCenterSchema = new mongoose.Schema({
+  name: String,
+  type: String,
+  address: String,
+  phone: String,
+  lat: Number,
+  lng: Number
+});
+const SupportCenter = mongoose.model('SupportCenter', supportCenterSchema);
 
 // Auth Middleware
 const authMiddleware = (req, res, next) => {
@@ -349,6 +360,16 @@ app.post('/api/peergroups/posts/:postId/vote', authMiddleware, async (req, res) 
 });
 // ---------------------------------------------
 
+// Support Center Routes
+app.get('/api/centers', authMiddleware, async (req, res) => {
+  try {
+    const centers = await SupportCenter.find();
+    res.json(centers);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch centers' });
+  }
+});
+
 // Assessment Routes
 app.post('/api/assessments', authMiddleware, async (req, res) => {
   const assessment = new Assessment({ ...req.body, userId: req.userId });
@@ -370,6 +391,23 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
+
+// Initialize Support Centers
+const initCenters = async () => {
+  try {
+    const count = await SupportCenter.countDocuments();
+    if (count === 0) {
+      await SupportCenter.create([
+        { name: 'Sthira Wellness Center', type: 'Mental Health Clinic', address: '123 Peace St, Wellness City', phone: '+1 234 567 8901', lat: 12.9716, lng: 77.5946 },
+        { name: 'City General Hospital - Psych Ward', type: 'Hospital', address: '456 Care Rd, Wellness City', phone: '+1 234 567 8902', lat: 12.9800, lng: 77.6000 },
+        { name: 'Hope Counseling Hub', type: 'Counseling Center', address: '789 Support Ave, Wellness City', phone: '+1 234 567 8903', lat: 12.9600, lng: 77.5800 }
+      ]);
+      console.log('Initial support centers created');
+    }
+  } catch (err) {
+    console.error('Error initializing centers:', err);
+  }
+};
 
 // Initialize Peer Groups
 const initGroups = async () => {
