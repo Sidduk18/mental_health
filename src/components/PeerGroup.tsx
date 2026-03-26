@@ -77,7 +77,6 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
   };
 
   const handleOpenGroup = (group: any) => {
-    if (!group.members.includes(profile.uid)) return;
     setActiveGroup(group);
     fetchPosts(group._id || group.id);
   };
@@ -93,7 +92,10 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ content: newPost })
+        body: JSON.stringify({
+          content: newPost,
+          authorName: profile.anonymous ? 'Anonymous Member' : (profile.displayName || 'Anonymous')
+        })
       });
       setNewPost('');
       fetchPosts(groupId);
@@ -129,7 +131,10 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ content: commentText })
+        body: JSON.stringify({
+          content: commentText,
+          authorName: profile.anonymous ? 'Anonymous Member' : (profile.displayName || 'Anonymous')
+        })
       });
       setCommentText('');
       setReplyingTo(null);
@@ -184,20 +189,34 @@ export default function PeerGroupComponent({ profile }: { profile: UserProfile }
         </div>
 
         <div className="bg-white dark:bg-black/20 p-4 md:p-6 rounded-[32px] border border-black/10 dark:border-white/10 shadow-sm flex flex-col md:flex-row gap-4">
-          <textarea
-            value={newPost}
-            onChange={(e) => setNewPost(e.target.value)}
-            placeholder={`Share something with ${activeGroup.name}...`}
-            className="flex-1 bg-neutral-50 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all resize-none h-24 text-black dark:text-white"
-          />
-          <button 
-            onClick={handleCreatePost}
-            disabled={!newPost.trim()}
-            className="bg-black dark:bg-white text-white dark:text-black px-6 py-3 md:py-0 rounded-2xl font-bold flex items-center justify-center md:justify-start space-x-2 disabled:opacity-50 hover:shadow-lg transition-all"
-          >
-            <Send className="w-5 h-5" />
-            <span>Post</span>
-          </button>
+          {activeGroup.members.includes(profile.uid) ? (
+            <>
+              <textarea
+                value={newPost}
+                onChange={(e) => setNewPost(e.target.value)}
+                placeholder={`Share something with ${activeGroup.name}...`}
+                className="flex-1 bg-neutral-50 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all resize-none h-24 text-black dark:text-white"
+              />
+              <button
+                onClick={handleCreatePost}
+                disabled={!newPost.trim()}
+                className="bg-black dark:bg-white text-white dark:text-black px-6 py-3 md:py-0 rounded-2xl font-bold flex items-center justify-center md:justify-start space-x-2 disabled:opacity-50 hover:shadow-lg transition-all"
+              >
+                <Send className="w-5 h-5" />
+                <span>Post</span>
+              </button>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col md:flex-row items-center justify-between gap-4 p-2">
+              <p className="text-black/50 dark:text-white/50 font-medium">Join this group to participate in discussions!</p>
+              <button
+                onClick={(e) => handleJoinLeave(e, activeGroup)}
+                className="bg-black dark:bg-white text-white dark:text-black px-8 py-3 rounded-2xl font-bold hover:shadow-lg transition-all"
+              >
+                Join Group
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">

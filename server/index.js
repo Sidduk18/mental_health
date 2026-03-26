@@ -284,11 +284,10 @@ app.get('/api/peergroups/:id/posts', authMiddleware, async (req, res) => {
 
 app.post('/api/peergroups/:id/posts', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
     const post = new Post({
       groupId: req.params.id,
       userId: req.userId,
-      authorName: user.displayName || 'Anonymous',
+      authorName: req.body.authorName || 'Anonymous',
       content: req.body.content
     });
     await post.save();
@@ -300,13 +299,12 @@ app.post('/api/peergroups/:id/posts', authMiddleware, async (req, res) => {
 
 app.post('/api/peergroups/posts/:postId/comments', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
     const post = await Post.findById(req.params.postId);
     if (!post) return res.status(404).json({ error: 'Post not found' });
 
     post.comments.push({
       userId: req.userId,
-      authorName: user.displayName || 'Anonymous',
+      authorName: req.body.authorName || 'Anonymous',
       content: req.body.content
     });
     

@@ -66,11 +66,17 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
               className="space-y-4"
             >
               <button
-                onClick={() => setAuthMethod('email')}
+                onClick={() => { setAuthMethod('email'); setIsLogin(true); }}
                 className="w-full flex items-center justify-center px-4 py-4 border border-black/10 rounded-2xl shadow-sm bg-black text-white hover:bg-black/90 transition-all font-bold"
               >
                 <Mail className="w-5 h-5 mr-2" />
-                Continue with Email
+                Sign In with Email
+              </button>
+              <button
+                onClick={() => { setAuthMethod('email'); setIsLogin(false); }}
+                className="w-full flex items-center justify-center px-4 py-4 border-2 border-black rounded-2xl shadow-sm bg-white text-black hover:bg-black/5 transition-all font-bold"
+              >
+                Create new Account
               </button>
             </motion.div>
           ) : (
