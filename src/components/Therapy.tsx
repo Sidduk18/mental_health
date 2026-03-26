@@ -168,10 +168,10 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
 
   const filteredTherapists = therapists.filter(t => t.role === profile.role);
   const calculateCost = (mins: number) => {
-    if (mins === 30) return 499;
-    if (mins === 45) return 499 + 199;
-    if (mins === 60) return 499 + 199 + 199;
-    return 499;
+    if (mins === 30) return 299;
+    if (mins === 45) return 299 + 149;
+    if (mins === 60) return 299 + 149 + 149;
+    return 299;
   };
   const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM', '04:00 PM'];
   const dates = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(new Date()), i + 1));
@@ -334,7 +334,7 @@ export default function Therapy({ profile }: { profile: UserProfile }) {
                   </div>
                   <div className="flex justify-between items-center pt-4 border-t border-black/5">
                     <span className="text-sm font-bold opacity-50">Base Rate (30m)</span>
-                    <span className="font-bold">₹499</span>
+                    <span className="font-bold">₹299</span>
                   </div>
                   <div className="flex justify-between items-center pt-4 border-t border-black/5">
                     <span className="text-lg font-bold">Total Cost</span>

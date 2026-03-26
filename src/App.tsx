@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, UserRole } from './types';
 import Auth from './components/Auth';
-import Dashboard from './components/Dashboard';
-import MoodTracker from './components/MoodTracker';
-import CrisisSupport from './components/CrisisSupport';
-import Journal from './components/Journal';
-import Therapy from './components/Therapy';
-import Assessments from './components/Assessments';
-import Settings from './components/Settings';
-import Exercises from './components/Exercises';
 import { Layout } from './components/Layout';
 import { Loader2 } from 'lucide-react';
-import PeerGroup from './components/PeerGroup';
+import { lazy, Suspense } from 'react';
+import logo from './assets/logo.jpg';
+
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const MoodTracker = lazy(() => import('./components/MoodTracker'));
+const CrisisSupport = lazy(() => import('./components/CrisisSupport'));
+const Journal = lazy(() => import('./components/Journal'));
+const Therapy = lazy(() => import('./components/Therapy'));
+const Assessments = lazy(() => import('./components/Assessments'));
+const Settings = lazy(() => import('./components/Settings'));
+const Exercises = lazy(() => import('./components/Exercises'));
+const PeerGroup = lazy(() => import('./components/PeerGroup'));
 import getApiUrl from './lib/api';
 
 export default function App() {
@@ -65,8 +68,16 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white text-black">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-[#0a0a0a] text-black dark:text-white p-6">
+        <div className="relative mb-8">
+          <div className="absolute inset-0 bg-black/5 dark:bg-white/5 blur-2xl rounded-full scale-150 animate-pulse"></div>
+          <img src={logo} alt="Sthira Logo" className="w-24 h-24 md:w-32 md:h-32 rounded-3xl shadow-2xl relative z-10 object-cover border border-black/5" />
+        </div>
+        <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-3 animate-in fade-in slide-in-from-bottom-4 duration-1000">Sthira</h1>
+        <p className="text-black/50 dark:text-white/50 font-medium tracking-tight text-center animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-200">One tap closer to feeling better</p>
+        <div className="mt-12">
+          <Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" />
+        </div>
       </div>
     );
   }
@@ -79,18 +90,28 @@ export default function App() {
   }
 
   const renderView = () => {
-    switch (currentView) {
-      case 'dashboard': return <Dashboard profile={profile} setView={setCurrentView} />;
-      case 'mood': return <MoodTracker profile={profile} />;
-      case 'crisis': return <CrisisSupport profile={profile} />;
-      case 'journal': return <Journal profile={profile} />;
-      case 'therapy': return <Therapy profile={profile} />;
-      case 'assessments': return <Assessments profile={profile} />;
-      case 'exercises': return <Exercises profile={profile} />;
-      case 'peer': return <PeerGroup profile={profile} />;
-      case 'settings': return <Settings profile={profile} setProfile={setProfile} />;
-      default: return <Dashboard profile={profile} setView={setCurrentView} />;
-    }
+    return (
+      <Suspense fallback={
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 animate-spin text-black/20" />
+        </div>
+      }>
+        {(() => {
+          switch (currentView) {
+            case 'dashboard': return <Dashboard profile={profile} setView={setCurrentView} />;
+            case 'mood': return <MoodTracker profile={profile} />;
+            case 'crisis': return <CrisisSupport profile={profile} />;
+            case 'journal': return <Journal profile={profile} />;
+            case 'therapy': return <Therapy profile={profile} />;
+            case 'assessments': return <Assessments profile={profile} />;
+            case 'exercises': return <Exercises profile={profile} />;
+            case 'peer': return <PeerGroup profile={profile} />;
+            case 'settings': return <Settings profile={profile} setProfile={setProfile} />;
+            default: return <Dashboard profile={profile} setView={setCurrentView} />;
+          }
+        })()}
+      </Suspense>
+    );
   };
 
   return (

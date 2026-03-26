@@ -109,6 +109,9 @@ const postSchema = new mongoose.Schema({
   authorName: String,
   content: String,
   timestamp: { type: Date, default: Date.now },
+  upvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  downvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  score: { type: Number, default: 0 },
   comments: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     authorName: String,
@@ -311,6 +314,39 @@ app.post('/api/peergroups/posts/:postId/comments', authMiddleware, async (req, r
     res.status(201).json(post);
   } catch (err) {
     res.status(500).json({ error: 'Failed to add comment' });
+  }
+});
+
+app.post('/api/peergroups/posts/:postId/vote', authMiddleware, async (req, res) => {
+  try {
+    const { type } = req.body; // 'up' or 'down'
+    const post = await Post.findById(req.params.postId);
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+
+    const upIndex = post.upvotes.indexOf(req.userId);
+    const downIndex = post.downvotes.indexOf(req.userId);
+
+    if (type === 'up') {
+      if (upIndex > -1) {
+        post.upvotes.splice(upIndex, 1);
+      } else {
+        post.upvotes.push(req.userId);
+        if (downIndex > -1) post.downvotes.splice(downIndex, 1);
+      }
+    } else if (type === 'down') {
+      if (downIndex > -1) {
+        post.downvotes.splice(downIndex, 1);
+      } else {
+        post.downvotes.push(req.userId);
+        if (upIndex > -1) post.upvotes.splice(upIndex, 1);
+      }
+    }
+
+    post.score = post.upvotes.length - post.downvotes.length;
+    await post.save();
+    res.json(post);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to vote' });
   }
 });
 // ---------------------------------------------
