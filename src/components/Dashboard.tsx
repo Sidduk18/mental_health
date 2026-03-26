@@ -1,6 +1,7 @@
-import React from 'react';
-import { UserProfile } from '../types';
+import React, { useState, useEffect } from 'react';
+import { UserProfile, Appointment } from '../types';
 import { Layout } from './Layout';
+import getApiUrl from '../lib/api';
 import { 
   Smile,
   BookOpen,
@@ -20,6 +21,30 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ profile, setView }: DashboardProps) {
+  const [nextAppointment, setNextAppointment] = useState<Appointment | null>(null);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      const token = localStorage.getItem('auth_token');
+      try {
+        const response = await fetch(getApiUrl('/api/appointments'), {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        const upcoming = data
+          .filter((app: any) => app.status === 'scheduled' && new Date(app.dateTime) > new Date())
+          .sort((a: any, b: any) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+
+        if (upcoming.length > 0) {
+          setNextAppointment({ ...upcoming[0], dateTime: new Date(upcoming[0].dateTime) });
+        }
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+      }
+    };
+    fetchAppointments();
+  }, []);
+
   const stats = [
     { label: 'Current Streak', value: `${profile.streak} Days`, icon: Sparkles, color: 'text-yellow-500', bg: 'bg-yellow-50' },
     { label: 'Mood Logs', value: '12', icon: Smile, color: 'text-emerald-500', bg: 'bg-emerald-50' },
@@ -116,27 +141,57 @@ export default function Dashboard({ profile, setView }: DashboardProps) {
         </section>
 
         <section className="bg-white dark:bg-black/20 p-8 md:p-10 rounded-[40px] md:rounded-[48px] border border-black/10 dark:border-white/10 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-[10px] md:text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest text-emerald-600">Upcoming Session</span>
-            </div>
-            <h3 className="text-2xl md:text-3xl font-black mb-2 md:mb-4 italic text-black dark:text-white">Next Step Forward</h3>
-            <p className="text-black/50 dark:text-white/50 mb-6 md:mb-8 text-sm md:text-base">Your next session with Dr. Sarah Chen is in 2 hours. Preparing your journal notes can help make the most of your time.</p>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center space-x-3 md:space-x-4">
-              <Clock className="w-5 h-5 text-black/20 dark:text-white/20" />
-              <span className="font-bold text-black dark:text-white text-sm md:text-base">Today, 4:00 PM</span>
-            </div>
-            <button
-              onClick={() => setView('therapy')}
-              className="text-black dark:text-white font-black uppercase tracking-tighter flex items-center hover:translate-x-2 transition-transform text-sm"
-            >
-              <span>View Details</span>
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </button>
-          </div>
+          {nextAppointment ? (
+            <>
+              <div>
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-[10px] md:text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest text-emerald-600">Upcoming Session</span>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-black mb-2 md:mb-4 italic text-black dark:text-white">Next Step Forward</h3>
+                <p className="text-black/50 dark:text-white/50 mb-6 md:mb-8 text-sm md:text-base">Your session is scheduled. Preparing your journal notes can help make the most of your time.</p>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-3 md:space-x-4">
+                  <Clock className="w-5 h-5 text-black/20 dark:text-white/20" />
+                  <span className="font-bold text-black dark:text-white text-sm md:text-base">
+                    {nextAppointment.dateTime.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setView('therapy')}
+                  className="text-black dark:text-white font-black uppercase tracking-tighter flex items-center hover:translate-x-2 transition-transform text-sm"
+                >
+                  <span>View Details</span>
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                  <span className="text-[10px] md:text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-widest text-blue-600">Always Here</span>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-black mb-2 md:mb-4 italic text-black dark:text-white">Next Step Forward</h3>
+                <p className="text-black/50 dark:text-white/50 mb-6 md:mb-8 text-sm md:text-base">You're not alone. Our community and experts are here to help you whenever you're ready. Take a small step today.</p>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-3 md:space-x-4">
+                  <Users className="w-5 h-5 text-black/20 dark:text-white/20" />
+                  <span className="font-bold text-black dark:text-white text-sm md:text-base">Supportive Community</span>
+                </div>
+                <button
+                  onClick={() => setView('peer')}
+                  className="text-black dark:text-white font-black uppercase tracking-tighter flex items-center hover:translate-x-2 transition-transform text-sm"
+                >
+                  <span>Join a Group</span>
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </button>
+              </div>
+            </>
+          )}
         </section>
       </div>
     </div>
