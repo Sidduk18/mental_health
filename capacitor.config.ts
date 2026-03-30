@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.therapyapp.app', 
-  appName: 'TherapyApp',
+  appName: 'Sthira',
   webDir: 'dist',
   server: {
     androidScheme: 'http',
